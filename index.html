@@ -909,7 +909,11 @@
                     React.createElement('div', { ref: chatContainerRef, className: 'flex-grow overflow-y-auto p-5 space-y-6' },
                         conversation.length === 0 ? (
                             React.createElement('div', { className: 'text-center text-gray-500 flex flex-col justify-center items-center h-full' },
-                                React.createElement('div', { className: 'w-16 h-16 bg-gradient-to-br from-[var(--gradient-from)] to-[var(--gradient-to)] rounded-full mb-4 opacity-20' }),
+                                React.createElement('div', { className: 'w-20 h-20 bg-gradient-to-br from-[var(--gradient-from)] to-[var(--gradient-to)] rounded-full mb-4 flex items-center justify-center shadow-lg' },
+                                    React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 448 512', className: 'w-10 h-10 fill-white' },
+                                        React.createElement('path', { d: 'M448 80v48c0 44.2-100.3 80-224 80S0 172.2 0 128V80C0 35.8 100.3 0 224 0S448 35.8 448 80zM393.2 214.7c20.8-7.4 39.9-16.9 54.8-28.6V288c0 44.2-100.3 80-224 80S0 332.2 0 288V186.1c14.9 11.8 34 21.2 54.8 28.6C99.7 230.7 159.5 240 224 240s124.3-9.3 169.2-25.3zM448 368v48c0 44.2-100.3 80-224 80S0 460.2 0 416V368c0-17.5 13-32.9 31.5-41.2C86.2 344.3 152.6 352 224 352s137.8-7.7 192.5-25.2c18.5 8.3 31.5 23.7 31.5 41.2z' })
+                                    )
+                                ),
                                 React.createElement('h3', { className: 'text-xl font-semibold mb-2' }, 'SQL 自动化编写助手'),
                                 React.createElement('p', null, '输入您的需求开始生成SQL。'),
                                 React.createElement('p', null, '您可以持续对话，对生成的SQL进行修改和完善。')
