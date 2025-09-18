@@ -4,87 +4,163 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>SQL 自动化编写助手</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20448%20512'%3E%3Cpath%20fill='%23007aff'%20d='M448%2080v48c0%2044.2-100.3%2080-224%2080S0%20172.2%200%20128V80C0%2035.8%20100.3%200%20224%200S448%2035.8%20448%2080zM393.2%20214.7c20.8-7.4%2039.9-16.9%2054.8-28.6V288c0%2044.2-100.3%2080-224%2080S0%20332.2%200%20288V186.1c14.9%2011.8%2034%2021.2%2054.8%2028.6C99.7%20230.7%20159.5%20240%20224%20240s124.3-9.3%20169.2-25.3zM448%20368v48c0%2044.2-100.3%2080-224%2080S0%20460.2%200%20416V368c0-17.5%2013-32.9%2031.5-41.2C86.2%20344.3%20152.6%20352%20224%20352s137.8-7.7%20192.5-25.2c18.5%208.3%2031.5%2023.7%2031.5%2041.2z'/%3E%3C/svg%3E">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20448%20512'%3E%3Cpath%20fill='%234a90e2'%20d='M448%2080v48c0%2044.2-100.3%2080-224%2080S0%20172.2%200%20128V80C0%2035.8%20100.3%200%20224%200S448%2035.8%20448%2080zM393.2%20214.7c20.8-7.4%2039.9-16.9%2054.8-28.6V288c0%2044.2-100.3%2080-224%2080S0%20332.2%200%20288V186.1c14.9%2011.8%2034%2021.2%2054.8%2028.6C99.7%20230.7%20159.5%20240%20224%20240s124.3-9.3%20169.2-25.3zM448%20368v48c0%2044.2-100.3%2080-224%2080S0%20460.2%200%20416V368c0-17.5%2013-32.9%2031.5-41.2C86.2%20344.3%20152.6%20352%20224%20352s137.8-7.7%20192.5-25.2c18.5%208.3%2031.5%2023.7%2031.5%2041.2z'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
-            --bg-color: #f0f2f5;
+            --bg-color: #f8fafb;
             --card-bg: #ffffff;
-            --text-primary: #1c1c1e;
-            --text-secondary: #8a8a8e;
-            --accent-color: #007aff;
-            --border-color: #e5e5ea;
-            --header-bg: rgba(249, 249, '249', 0.85);
-            --info-bg: #e3f2fd;
-            --info-border: #1976d2;
-            --danger-bg: #dc2626;
-            --danger-hover-bg: #b91c1c;
+            --text-primary: #1a1f36;
+            --text-secondary: #6b7280;
+            --accent-color: #4a90e2;
+            --accent-light: #e3f2fd;
+            --accent-dark: #2c5aa0;
+            --border-color: #e5e7eb;
+            --header-bg: rgba(255, 255, 255, 0.95);
+            --info-bg: #e1f5fe;
+            --info-border: #29b6f6;
+            --danger-bg: #ff6b6b;
+            --danger-hover-bg: #fa5252;
+            --success-bg: #51cf66;
+            --warning-bg: #ffd43b;
+            --gradient-from: #4a90e2;
+            --gradient-to: #64b5f6;
+        }
+        .dark {
+            --bg-color: #0f1419;
+            --card-bg: #1c2128;
+            --text-primary: #e1e8ed;
+            --text-secondary: #8899a6;
+            --accent-color: #4a90e2;
+            --accent-light: #1e3a5f;
+            --accent-dark: #64b5f6;
+            --border-color: #2f3336;
+            --header-bg: rgba(15, 20, 25, 0.95);
+            --info-bg: #0d47a1;
+            --info-border: #29b6f6;
+            --danger-bg: #e03131;
+            --danger-hover-bg: #c92a2a;
         }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
+            background: var(--bg-color);
             color: var(--text-primary);
             overscroll-behavior: none;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 400px;
+            background: linear-gradient(135deg, var(--accent-light) 0%, transparent 50%);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
         }
         .ios-header {
-            background-color: var(--header-bg);
+            background: var(--header-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
         .ios-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            transition: box-shadow 0.2s ease-in-out;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+        .ios-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gradient-from), var(--gradient-to));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .ios-card:hover::before {
+            opacity: 1;
         }
         .ios-button {
-            background-color: var(--accent-color);
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-dark));
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 12px 20px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
         }
         .ios-button:hover {
-            background-color: #0056b3;
+            background: linear-gradient(135deg, var(--accent-dark), var(--accent-color));
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
+        .dark .ios-button:hover { 
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
         }
         .ios-button:active {
             transform: scale(0.98);
         }
         .ios-button:disabled {
-            background-color: #b0c4de;
+            background: linear-gradient(135deg, #9ca3af, #6b7280);
             cursor: not-allowed;
+            box-shadow: none;
         }
         .ios-button-secondary {
-            background-color: var(--card-bg);
+            background: var(--card-bg);
             color: var(--accent-color);
-            border: 1px solid var(--border-color);
+            border: 2px solid var(--accent-color);
+            box-shadow: none;
+        }
+        .dark .ios-button-secondary { 
+            background-color: var(--card-bg); 
+            color: var(--accent-color); 
+            border-color: var(--accent-color); 
+        }
+        .ios-button-secondary:hover {
+            background: var(--accent-light);
+            transform: translateY(-1px);
         }
         .ios-button-secondary:disabled {
             background-color: var(--card-bg);
-            color: #b0c4de;
-            border-color: #e5e5ea;
-            opacity: 0.7;
+            color: #9ca3af;
+            border-color: #e5e7eb;
+            opacity: 0.5;
+        }
+        .dark .ios-button-secondary:disabled { 
+            color: #4b5563; 
+            border-color: #374151; 
+            background-color: var(--card-bg);
         }
         .ios-button.danger {
-            background-color: var(--danger-bg);
+            background: linear-gradient(135deg, var(--danger-bg), var(--danger-hover-bg));
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
         }
         .ios-button.danger:hover {
-            background-color: var(--danger-hover-bg);
+            background: linear-gradient(135deg, var(--danger-hover-bg), var(--danger-bg));
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
         }
         .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--accent-color);
+            border: 3px solid var(--accent-light);
+            border-top: 3px solid var(--accent-color);
             border-radius: 50%;
             width: 30px;
             height: 30px;
-            animation: spin 1s linear infinite;
+            animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -92,12 +168,12 @@
         }
         .small-loader {
             display: inline-block;
-            border: 2px solid #f3f3f3;
+            border: 2px solid var(--accent-light);
             border-top: 2px solid var(--accent-color);
             border-radius: 50%;
             width: 16px;
             height: 16px;
-            animation: spin 1s linear infinite;
+            animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
         }
         .mono { 
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; 
@@ -107,13 +183,18 @@
             font-size: 14px;
         }
         .markdown-content pre {
-            background-color: #2d3748;
+            background: linear-gradient(135deg, #2d3748, #1a202c);
             color: #e2e8f0;
-            padding: 0.75rem;
-            border-radius: 0.375rem;
+            padding: 1rem;
+            border-radius: 12px;
             overflow-x: auto;
             font-size: 0.875em;
             line-height: 1.5;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+        }
+        .dark .markdown-content pre { 
+            background: linear-gradient(135deg, #1a1f36, #0f1419); 
+            color: #e1e8ed; 
         }
         .markdown-content code {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -123,9 +204,15 @@
             padding: 0;
         }
         .markdown-content :not(pre) > code {
-            background-color: rgba(0,0,0,0.1);
+            background: var(--accent-light);
+            color: var(--accent-dark);
             padding: 0.1em 0.3em;
-            border-radius: 0.25rem;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .dark .markdown-content :not(pre) > code { 
+            background: var(--accent-light); 
+            color: var(--accent-color);
         }
         .markdown-content ul, .markdown-content ol {
             padding-left: 1.75rem;
@@ -140,6 +227,120 @@
         }
         .markdown-content > :last-child {
             margin-bottom: 0;
+        }
+        .dark textarea, .dark select, .dark input { 
+            background-color: #1c2128; 
+            border-color: #374151; 
+            color: var(--text-primary); 
+        }
+        .dark ::placeholder { color: #6b7280; }
+        .dark .bg-gray-100 { background-color: #1c2128; }
+        .dark .bg-gray-200 { background-color: #2f3336; }
+        .dark .bg-gray-800 { background: linear-gradient(135deg, #1a1f36, #0f1419); }
+        .dark .text-gray-500 { color: var(--text-secondary); }
+        .dark .text-gray-600 { color: #8899a6; }
+        .dark .text-gray-700 { color: #d1d5db; }
+        .dark .text-gray-800 { color: var(--text-primary); }
+        .dark .hover\:bg-gray-200:hover { background-color: #2f3336; }
+        .dark .border-t { border-color: var(--border-color); }
+        .dark .bg-white { background-color: var(--card-bg); }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-dark));
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+            animation: toast-fade-in 0.3s ease-out, toast-fade-out 0.3s ease-in 2.7s;
+            font-weight: 500;
+        }
+        .dark .toast-container { 
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-dark)); 
+            color: white; 
+        }
+        @keyframes toast-fade-in {
+            from { opacity: 0; transform: translate(-50%, -20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        @keyframes toast-fade-out {
+            from { opacity: 1; transform: translate(-50%, 0); }
+            to { opacity: 0; transform: translate(-50%, -20px); }
+        }
+        /* Message bubbles enhancement */
+        .user-message {
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-dark));
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+        }
+        .assistant-message {
+            background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+            border-radius: 18px 18px 18px 4px;
+            border: 1px solid var(--border-color);
+        }
+        .dark .assistant-message {
+            background: linear-gradient(135deg, #2f3336, #1c2128);
+        }
+        /* Input area enhancement */
+        .input-textarea {
+            background: var(--card-bg);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+        .input-textarea:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.1);
+        }
+        /* Decorative elements */
+        .decoration-dots {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, var(--accent-light) 2px, transparent 2px);
+            background-size: 10px 10px;
+            opacity: 0.3;
+        }
+        /* Panel slide animation */
+        .slide-panel {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* Button hover effects */
+        .icon-button {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            border-radius: 12px;
+        }
+        .icon-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(74, 144, 226, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+        .icon-button:hover::before {
+            width: 100%;
+            height: 100%;
+        }
+        /* Code block enhancements */
+        .code-block {
+            position: relative;
+            background: linear-gradient(135deg, #2d3748, #1a202c);
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            border-radius: 12px;
+        }
+        .dark .code-block {
+            background: linear-gradient(135deg, #1a1f36, #0f1419);
         }
     </style>
 <script type="importmap">
@@ -167,6 +368,7 @@
         const LOCAL_STORAGE_PROFILES_KEY = 'sql_assistant_profiles_v2';
         const LOCAL_STORAGE_ACTIVE_PROFILE_ID_KEY = 'sql_assistant_active_profile_id_v2';
         const LOCAL_STORAGE_HISTORY_KEY = 'sql_assistant_history_v2';
+        const LOCAL_STORAGE_THEME_KEY = 'sql_assistant_theme_v1';
 
         const DEFAULT_SETTINGS = {
             apiUrl: 'https://generativelanguage.googleapis.com/v1beta',
@@ -470,25 +672,38 @@
             )
         );
         
+        const SunIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round"}, React.createElement('circle',{cx:"12",cy:"12",r:"5"}), React.createElement('line',{x1:"12",y1:"1",x2:"12",y2:"3"}), React.createElement('line',{x1:"12",y1:"21",x2:"12",y2:"23"}), React.createElement('line',{x1:"4.22",y1:"4.22",x2:"5.64",y2:"5.64"}), React.createElement('line',{x1:"18.36",y1:"18.36",x2:"19.78",y2:"19.78"}), React.createElement('line',{x1:"1",y1:"12",x2:"3",y2:"12"}), React.createElement('line',{x1:"21",y1:"12",x2:"23",y2:"12"}), React.createElement('line',{x1:"4.22",y1:"19.78",x2:"5.64",y2:"18.36"}), React.createElement('line',{x1:"18.36",y1:"5.64",x2:"19.78",y2:"4.22"}));
+        const MoonIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round"}, React.createElement('path',{d:"M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"}));
+        const InfoIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, React.createElement('circle',{cx:"12",cy:"12",r:"10"}), React.createElement('line',{x1:"12",y1:"16",x2:"12",y2:"12"}), React.createElement('line',{x1:"12",y1:"8",x2:"12.01",y2:"8"}));
         const SendIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: "h-5 w-5"}, React.createElement('line', { x1: "22", y1: "2", x2: "11", y2: "13" }), React.createElement('polygon', { points: "22 2 15 22 11 13 2 9 22 2" }));
         const StopIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "currentColor", className: "h-5 w-5 text-white" }, React.createElement('rect', { x: "6", y: "6", width: "12", height: "12", rx: "1" }));
         const EditIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, React.createElement('path', { d: "M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"}));
         const RegenerateIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: "h-5 w-5"}, React.createElement('path', { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" }), React.createElement('path', { d: "M21 3v5h-5" }), React.createElement('path', { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" }), React.createElement('path', { d: "M3 21v-5h5" }));
 
+        // --- From components/Toast.tsx ---
+        const Toast = ({ message }) => {
+            return React.createElement('div', { className: 'toast-container' }, message);
+        };
 
         // --- From components/Header.tsx ---
-        const Header = ({ onHistoryClick, onSettingsClick }) => {
+        const Header = ({ onHistoryClick, onSettingsClick, onTutorialClick, onToggleTheme, theme }) => {
             return (
                 React.createElement('header', { className: 'ios-header sticky top-0 z-30 px-4 py-3' },
                     React.createElement('div', { className: 'lg:max-w-7xl mx-auto flex justify-between items-center' },
-                        React.createElement('div', { className: 'w-10' },
-                            React.createElement('button', { onClick: onHistoryClick, className: 'p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '查看历史' },
+                        React.createElement('div', { className: 'flex-1 flex justify-start' },
+                            React.createElement('button', { onClick: onHistoryClick, className: 'icon-button p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '查看历史' },
                                 React.createElement(HistoryIcon, null)
                             )
                         ),
-                        React.createElement('h1', { className: 'text-xl font-bold text-gray-800 text-center flex-1' }, 'SQL 自动化编写助手'),
-                        React.createElement('div', { className: 'w-10 flex justify-end' },
-                            React.createElement('button', { onClick: onSettingsClick, className: 'p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '打开设置' },
+                        React.createElement('h1', { className: 'text-xl font-bold text-center bg-gradient-to-r from-[var(--gradient-from)] to-[var(--gradient-to)] bg-clip-text text-transparent' }, 'SQL 自动化编写助手'),
+                        React.createElement('div', { className: 'flex-1 flex justify-end items-center gap-1' },
+                           React.createElement('button', { onClick: onToggleTheme, className: 'icon-button p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '切换主题' },
+                                theme === 'light' ? React.createElement(MoonIcon, null) : React.createElement(SunIcon, null)
+                            ),
+                            React.createElement('button', { onClick: onTutorialClick, className: 'icon-button p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '查看教程' },
+                                React.createElement(InfoIcon, null)
+                            ),
+                            React.createElement('button', { onClick: onSettingsClick, className: 'icon-button p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '打开设置' },
                                 React.createElement(SettingsIcon, null)
                             )
                         )
@@ -682,14 +897,19 @@
             };
 
             return React.createElement(React.Fragment, null,
-                React.createElement('div', { className: 'flex justify-between items-center' },
-                    React.createElement('h2', { className: 'text-lg font-semibold' }, '对话'),
+                React.createElement('div', { className: 'flex justify-between items-center mb-4' },
+                    React.createElement('h2', { className: 'text-lg font-semibold flex items-center gap-2' }, 
+                        React.createElement('span', { className: 'w-3 h-3 bg-gradient-to-r from-[var(--gradient-from)] to-[var(--gradient-to)] rounded-full' }),
+                        '对话'
+                    ),
                     React.createElement('button', { onClick: onNewChat, className: 'ios-button ios-button-secondary py-2 px-4 text-sm' }, '开启新对话')
                 ),
                 React.createElement('div', { className: 'ios-card flex flex-col h-[calc(100vh-280px)] min-h-[300px] max-h-[600px]' },
+                    React.createElement('div', { className: 'decoration-dots top-2 right-2' }),
                     React.createElement('div', { ref: chatContainerRef, className: 'flex-grow overflow-y-auto p-5 space-y-6' },
                         conversation.length === 0 ? (
                             React.createElement('div', { className: 'text-center text-gray-500 flex flex-col justify-center items-center h-full' },
+                                React.createElement('div', { className: 'w-16 h-16 bg-gradient-to-br from-[var(--gradient-from)] to-[var(--gradient-to)] rounded-full mb-4 opacity-20' }),
                                 React.createElement('h3', { className: 'text-xl font-semibold mb-2' }, 'SQL 自动化编写助手'),
                                 React.createElement('p', null, '输入您的需求开始生成SQL。'),
                                 React.createElement('p', null, '您可以持续对话，对生成的SQL进行修改和完善。')
@@ -699,30 +919,30 @@
                                 msg.role === 'user' ? (
                                     React.createElement('div', { key: index, className: 'flex justify-end group' },
                                         editingIndex === index ? 
-                                        React.createElement('div', { className: 'bg-blue-500 text-white p-3 rounded-lg w-full max-w-[85%]' },
+                                        React.createElement('div', { className: 'user-message p-3 w-full max-w-[85%]' },
                                             React.createElement('textarea', {
                                                 value: editedContent,
                                                 onChange: e => setEditedContent(e.target.value),
-                                                className: 'w-full bg-blue-400 rounded-md p-2 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white/50',
+                                                className: 'w-full bg-white/20 rounded-md p-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50',
                                                 rows: 3
                                             }),
                                             React.createElement('div', { className: 'flex justify-end gap-2 mt-2' },
                                                 React.createElement('button', { onClick: cancelEditing, className: 'ios-button ios-button-secondary text-xs px-3 py-1 bg-white/20 text-white border-white/30 hover:bg-white/30' }, '取消'),
-                                                React.createElement('button', { onClick: handleSaveEdit, className: 'ios-button text-xs px-3 py-1 bg-white text-blue-500 hover:bg-gray-100' }, '保存')
+                                                React.createElement('button', { onClick: handleSaveEdit, className: 'ios-button text-xs px-3 py-1 bg-white text-[var(--accent-color)] hover:bg-gray-100' }, '保存')
                                             )
                                         ) :
                                         React.createElement('div', { className: 'flex items-center gap-2' },
-                                            React.createElement('button', { onClick: () => startEditing(index, msg.content), disabled: isLoading, className: 'opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 hover:text-blue-500 disabled:opacity-20', 'aria-label': '编辑' },
+                                            React.createElement('button', { onClick: () => startEditing(index, msg.content), disabled: isLoading, className: 'opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 hover:text-[var(--accent-color)] disabled:opacity-20', 'aria-label': '编辑' },
                                                 React.createElement(EditIcon, null)
                                             ),
-                                            React.createElement('div', { className: 'bg-blue-500 text-white p-3 rounded-lg max-w-[85%] whitespace-pre-wrap' }, msg.content)
+                                            React.createElement('div', { className: 'user-message p-3 max-w-[85%] whitespace-pre-wrap' }, msg.content)
                                         )
                                     )
                                 ) : (
                                     React.createElement('div', { key: index, className: 'flex justify-start' },
-                                        React.createElement('div', { className: `bg-gray-100 p-3 rounded-lg w-full ${msg.isError ? 'border-l-4 border-red-500' : ''}` },
+                                        React.createElement('div', { className: `assistant-message p-3 w-full ${msg.isError ? 'border-l-4 border-[var(--danger-bg)]' : ''}` },
                                             React.createElement('div', { className: 'flex justify-between items-center mb-2' },
-                                                React.createElement('span', { className: 'text-sm font-semibold text-gray-700' }, '助手'),
+                                                React.createElement('span', { className: 'text-sm font-semibold text-[var(--accent-color)]' }, '助手'),
                                                 !msg.isError && !msg.isStreaming && React.createElement('button', { onClick: () => handleCopy(msg.sql, index), className: 'ios-button ios-button-secondary text-xs py-1 px-3' }, 
                                                   copySuccessIndex === index ? '已复制' : '复制'
                                                 )
@@ -734,10 +954,10 @@
                                                     dangerouslySetInnerHTML: { __html: window.marked ? window.marked.parse(msg.thinking || '') : msg.thinking }
                                                 })
                                             ),
-                                            React.createElement('pre', { className: 'bg-gray-800 text-white rounded-md p-3 overflow-x-auto text-sm mono whitespace-pre-wrap' }, 
+                                            React.createElement('pre', { className: 'code-block p-3 overflow-x-auto text-sm mono whitespace-pre-wrap text-white' }, 
                                                 React.createElement('code', null, 
                                                     msg.isStreaming ? msg.content : msg.sql,
-                                                    msg.isStreaming && React.createElement('span', { className: 'inline-block w-2 h-4 bg-white animate-pulse ml-1 align-middle' })
+                                                    msg.isStreaming && React.createElement('span', { className: 'inline-block w-2 h-4 bg-[var(--accent-color)] animate-pulse ml-1 align-middle' })
                                                 )
                                             )
                                         )
@@ -755,13 +975,17 @@
                     React.createElement('div', { className: 'flex items-end gap-3' },
                         React.createElement('textarea', {
                             id: 'user-query',
-                            className: 'w-full border border-[var(--border-color)] rounded-lg p-3 text-base resize-none bg-gray-50 focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[var(--accent-color)]/20',
+                            className: 'input-textarea w-full p-3 text-base resize-none max-h-40 overflow-y-auto',
                             placeholder: '继续输入以改进SQL，或开始新对话... (Shift+Enter 换行)',
                             value: userQuery,
-                            onChange: (e) => setUserQuery(e.target.value),
+                            onChange: (e) => {
+                                setUserQuery(e.target.value);
+                                e.target.style.height = 'auto';
+                                e.target.style.height = `${e.target.scrollHeight}px`;
+                            },
                             onKeyDown: handleKeyDown,
                             disabled: isLoading || editingIndex !== null,
-                            rows: 2
+                            rows: 1
                         }),
                         isLoading
                             ? React.createElement('button', { onClick: handleStop, className: 'ios-button danger p-3 flex items-center justify-center flex-shrink-0' }, React.createElement(StopIcon))
@@ -787,7 +1011,7 @@
             { key: 'terminology', label: '4. 行业术语定义 (Terminology)', description: 'AI将根据这些定义理解特定的业务术语', placeholder: '输入行业术语及其定义...\n例如：\n术语:\n  KPI: 关键绩效指标' },
         ];
 
-        const SettingsPanel = ({ isOpen, onClose, activeProfile, profiles, onSave, onSwitch, onCreate, onDelete, onRename, onExport, onClearAll }) => {
+        const SettingsPanel = ({ isOpen, onClose, activeProfile, profiles, onSave, onSwitch, onCreate, onDelete, onRename, onExport, onClearAll, onShowToast }) => {
             const [currentSettings, setCurrentSettings] = useState(activeProfile.settings);
             const [newProfileName, setNewProfileName] = useState('');
             const importFileRef = useRef(null);
@@ -843,8 +1067,13 @@
                 try {
                     const models = await fetchModels(currentSettings.apiUrl, currentSettings.apiKey);
                     setAvailableModels(models);
-                    if (models.length > 0 && !models.includes(currentSettings.apiModel)) {
-                        setCurrentSettings(prev => ({ ...prev, apiModel: models[0] }));
+                     if (models.length > 0) {
+                        onShowToast('模型列表获取成功！');
+                        if (!models.includes(currentSettings.apiModel)) {
+                            setCurrentSettings(prev => ({ ...prev, apiModel: models[0] }));
+                        }
+                    } else {
+                        onShowToast('获取成功，但未找到可用模型。');
                     }
                 } catch (error) {
                     alert(`获取模型列表失败: ${error instanceof Error ? error.message : '未知错误'}`);
@@ -855,11 +1084,11 @@
             };
 
             return (
-                React.createElement('div', { className: `fixed top-0 w-full max-w-md h-full bg-[var(--bg-color)] shadow-xl transition-transform duration-300 z-50 flex flex-col ${isOpen ? 'right-0' : '-right-full'}`},
+                React.createElement('div', { className: `slide-panel fixed top-0 w-full max-w-md h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col ${isOpen ? 'right-0' : '-right-full'}`},
                     React.createElement('header', { className: 'ios-header p-4 flex-shrink-0' },
                         React.createElement('div', { className: 'flex justify-between items-center' },
                             React.createElement('h2', { className: 'text-xl font-bold' }, '设置'),
-                            React.createElement('button', { onClick: onClose, className: 'p-2 text-2xl font-bold hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '关闭设置' }, '×')
+                            React.createElement('button', { onClick: onClose, className: 'icon-button p-2 text-2xl font-bold hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '关闭设置' }, '×')
                         )
                     ),
                     React.createElement('div', { className: 'p-5 overflow-y-auto flex-grow' },
@@ -869,12 +1098,12 @@
                                 React.createElement('div', { className: 'space-y-3' },
                                     React.createElement('div', null,
                                         React.createElement('label', { htmlFor: 'profile-select', className: 'block text-sm font-medium text-gray-700 mb-1' }, '当前配置'),
-                                        React.createElement('select', { id: 'profile-select', value: activeProfile.id, onChange: (e) => onSwitch(e.target.value), className: 'w-full p-2 border border-[var(--border-color)] rounded-lg bg-gray-50 text-base' },
+                                        React.createElement('select', { id: 'profile-select', value: activeProfile.id, onChange: (e) => onSwitch(e.target.value), className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' },
                                             profiles.map(p => React.createElement('option', { key: p.id, value: p.id }, p.name))
                                         )
                                     ),
                                     React.createElement('div', { className: 'flex gap-2' },
-                                        React.createElement('input', { type: 'text', value: newProfileName, onChange: (e) => setNewProfileName(e.target.value), placeholder: '新配置名称', className: 'flex-grow p-2 border border-[var(--border-color)] rounded-lg bg-gray-50 text-base' }),
+                                        React.createElement('input', { type: 'text', value: newProfileName, onChange: (e) => setNewProfileName(e.target.value), placeholder: '新配置名称', className: 'flex-grow p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' }),
                                         React.createElement('button', { onClick: handleSaveNewProfile, className: 'ios-button ios-button-secondary text-sm px-3 py-1' }, '创建')
                                     ),
                                     React.createElement('div', { className: 'grid grid-cols-2 gap-2'},
@@ -887,20 +1116,20 @@
                                 React.createElement('div', { key: key, className: 'ios-card p-5' },
                                     React.createElement('label', { htmlFor: key, className: 'block text-lg font-semibold mb-3' }, label),
                                     React.createElement('p', { className: 'text-sm text-gray-600 mb-2' }, description),
-                                    React.createElement('textarea', { id: key, name: key, value: currentSettings[key], onChange: handleChange, className: 'w-full border border-[var(--border-color)] rounded-lg p-3 text-base resize-vertical min-h-[120px] bg-gray-50 focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[var(--accent-color)]/20', placeholder: placeholder }),
+                                    React.createElement('textarea', { id: key, name: key, value: currentSettings[key], onChange: handleChange, className: 'w-full border-2 border-[var(--border-color)] rounded-lg p-3 text-base resize-vertical min-h-[120px] bg-[var(--card-bg)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[var(--accent-color)]/20', placeholder: placeholder }),
                                     React.createElement('input', { type: 'file', id: `${key}-upload`, className: 'hidden', accept: '.txt,.md,.yaml,.yml,.sql', onChange: (e) => handleFileChange(e, key) }),
                                     React.createElement('button', { onClick: () => document.getElementById(`${key}-upload`)?.click(), className: 'ios-button ios-button-secondary mt-3 w-full' }, '上传文件')
                                 )
                             )),
-                            React.createElement('hr', { className: 'border-gray-300' }),
-                            React.createElement('h3', { className: 'text-lg font-semibold text-gray-800' }, 'API 配置'),
+                            React.createElement('hr', { className: 'border-[var(--border-color)]' }),
+                            React.createElement('h3', { className: 'text-lg font-semibold' }, 'API 配置'),
                             React.createElement('div', null,
                                 React.createElement('label', { htmlFor: 'apiUrl', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'API 链接'),
-                                React.createElement('input', { type: 'url', id: 'apiUrl', name: 'apiUrl', value: currentSettings.apiUrl, onChange: handleChange, className: 'w-full p-2 border border-[var(--border-color)] rounded-lg bg-gray-50 text-base', placeholder: 'https://generativelanguage.googleapis.com/v1beta' })
+                                React.createElement('input', { type: 'url', id: 'apiUrl', name: 'apiUrl', value: currentSettings.apiUrl, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base', placeholder: 'https://generativelanguage.googleapis.com/v1beta' })
                             ),
                             React.createElement('div', null,
                                 React.createElement('label', { htmlFor: 'apiKey', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'API Key'),
-                                React.createElement('input', { type: 'password', id: 'apiKey', name: 'apiKey', value: currentSettings.apiKey, onChange: handleChange, className: 'w-full p-2 border border-[var(--border-color)] rounded-lg bg-gray-50 text-base', placeholder: 'Enter your API Key' })
+                                React.createElement('input', { type: 'password', id: 'apiKey', name: 'apiKey', value: currentSettings.apiKey, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base', placeholder: 'Enter your API Key' })
                             ),
                             React.createElement('button', { onClick: handleFetchModels, disabled: isFetchingModels || !currentSettings.apiUrl || !currentSettings.apiKey, className: 'ios-button ios-button-secondary w-full mt-3 flex items-center justify-center gap-2' },
                                 React.createElement('span', null, isFetchingModels ? '获取中...' : '获取可用模型'),
@@ -909,7 +1138,7 @@
                             availableModels.length > 0 && (
                                 React.createElement('div', null,
                                     React.createElement('label', { htmlFor: 'apiModel', className: 'block text-sm font-medium text-gray-700 mb-1' }, '选择模型'),
-                                    React.createElement('select', { id: 'apiModel', name: 'apiModel', value: currentSettings.apiModel, onChange: handleChange, className: 'w-full p-2 border border-[var(--border-color)] rounded-lg bg-gray-50 text-base' },
+                                    React.createElement('select', { id: 'apiModel', name: 'apiModel', value: currentSettings.apiModel, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' },
                                         React.createElement('option', { value: '' }, '请选择模型'),
                                         availableModels.map(m => React.createElement('option', { key: m, value: m }, m))
                                     )
@@ -917,15 +1146,15 @@
                             )
                         )
                     ),
-                    React.createElement('div', { className: 'p-4 border-t border-gray-200 flex-shrink-0 bg-white' },
+                    React.createElement('div', { className: 'p-4 border-t border-[var(--border-color)] flex-shrink-0 bg-[var(--card-bg)]' },
                         React.createElement('div', { className: 'mx-auto grid gap-2' },
                             React.createElement('button', { onClick: () => onSave(currentSettings), className: 'ios-button w-full' }, '保存设置'),
+                            React.createElement('button', { onClick: onClearAll, className: 'ios-button danger w-full' }, '清除所有数据'),
                             React.createElement('div', { className: 'grid grid-cols-2 gap-2' },
                                 React.createElement('button', { onClick: onExport, className: 'ios-button ios-button-secondary w-full' }, '导出设置'),
                                 React.createElement('button', { onClick: () => importFileRef.current?.click(), className: 'ios-button ios-button-secondary w-full' }, '导入设置'),
                                 React.createElement('input', { type: 'file', ref: importFileRef, onChange: handleImport, className: 'hidden', accept: '.json' })
-                            ),
-                            React.createElement('button', { onClick: onClearAll, className: 'ios-button ios-button-secondary w-full' }, '清除所有数据')
+                            )
                         )
                     )
                 )
@@ -996,11 +1225,11 @@
             };
 
             return (
-                React.createElement('aside', { className: `fixed top-0 w-full max-w-lg h-full bg-[var(--bg-color)] shadow-xl transition-transform duration-300 z-50 flex flex-col ${isOpen ? 'left-0' : '-left-full'}` },
+                React.createElement('aside', { className: `slide-panel fixed top-0 w-full max-w-lg h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col ${isOpen ? 'left-0' : '-left-full'}` },
                     React.createElement('header', { className: 'ios-header p-4 flex-shrink-0' },
                         React.createElement('div', { className: 'flex justify-between items-center' },
                             React.createElement('h2', { className: 'text-xl font-bold' }, '历史记录 (最近10条)'),
-                            React.createElement('button', { onClick: onClose, className: 'p-2 text-2xl font-bold hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '关闭历史' }, '×')
+                            React.createElement('button', { onClick: onClose, className: 'icon-button p-2 text-2xl font-bold hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '关闭历史' }, '×')
                         )
                     ),
                     React.createElement('div', { className: 'p-5 overflow-y-auto flex-grow' },
@@ -1013,14 +1242,14 @@
                                 return React.createElement('div', { key: h.time, className: 'ios-card p-4 mb-3' },
                                     React.createElement('div', { className: 'flex items-start justify-between gap-3' },
                                         React.createElement('div', { className: 'flex-1' },
-                                            React.createElement('div', { className: 'text-xs text-gray-500' }, `#${history.length - idx} · ${new Date(h.time).toLocaleString()}`),
+                                            React.createElement('div', { className: 'text-xs text-[var(--accent-color)]' }, `#${history.length - idx} · ${new Date(h.time).toLocaleString()}`),
                                             React.createElement('div', { className: 'mt-1 text-sm' }, React.createElement('span', {className: 'font-semibold'}, '初始需求：'), initialRequest.slice(0, 200) + (initialRequest.length > 200 ? '...' : ''))
                                         ),
                                         React.createElement('button', { onClick: () => loadConversation(h.conversation), className: 'ios-button ios-button-secondary text-sm px-4 whitespace-nowrap' }, '加载')
                                     ),
                                     React.createElement('details', { className: 'mt-2' },
                                         React.createElement('summary', { className: 'text-sm text-gray-600 cursor-pointer' }, '查看最终 SQL'),
-                                        React.createElement('pre', { className: 'mt-2 p-3 bg-gray-900 text-white rounded-lg overflow-auto mono text-xs' }, finalSql)
+                                        React.createElement('pre', { className: 'mt-2 p-3 code-block text-white rounded-lg overflow-auto mono text-xs' }, finalSql)
                                     ),
                                     React.createElement('div', { className: 'mt-3 flex gap-2' },
                                         React.createElement('button', { onClick: () => copySql(h.conversation), className: 'ios-button ios-button-secondary text-xs px-2 py-1' }, '复制SQL'),
@@ -1030,7 +1259,7 @@
                             })
                         )
                     ),
-                    React.createElement('div', { className: 'p-4 border-t border-gray-200 flex-shrink-0 bg-white' },
+                    React.createElement('div', { className: 'p-4 border-t border-[var(--border-color)] flex-shrink-0 bg-[var(--card-bg)]' },
                         React.createElement('div', { className: 'mx-auto grid gap-2' },
                             React.createElement('button', { onClick: clearHistory, className: 'ios-button danger w-full', disabled: history.length === 0 }, '清空历史'),
                             React.createElement('div', { className: 'grid grid-cols-2 gap-2' },
@@ -1044,10 +1273,63 @@
             );
         };
         
+        // --- From components/TutorialPanel.tsx ---
+        const TutorialPanel = ({ isOpen, onClose }) => {
+            const Section = ({ title, children }) => React.createElement('div', { className: 'ios-card p-5' },
+                React.createElement('h3', { className: 'text-lg font-semibold mb-3 text-[var(--accent-color)]' }, title),
+                React.createElement('div', { className: 'text-sm text-gray-600 space-y-2' }, children)
+            );
+
+            const Tip = ({ title, children }) => React.createElement('div', { className: 'mt-4 p-3 bg-[var(--info-bg)] border-l-4 border-[var(--info-border)] rounded-r-lg' },
+                React.createElement('p', { className: 'font-semibold text-[var(--info-border)]' }, title),
+                React.createElement('p', { className: 'mt-1' }, children)
+            );
+
+            return React.createElement('div', { className: `slide-panel fixed top-0 w-full max-w-md h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col ${isOpen ? 'right-0' : '-right-full'}`},
+                React.createElement('header', { className: 'ios-header p-4 flex-shrink-0' },
+                    React.createElement('div', { className: 'flex justify-between items-center' },
+                        React.createElement('h2', { className: 'text-xl font-bold' }, '教程与提示'),
+                        React.createElement('button', { onClick: onClose, className: 'icon-button p-2 text-2xl font-bold hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '关闭教程' }, '×')
+                    )
+                ),
+                React.createElement('div', { className: 'p-5 overflow-y-auto flex-grow space-y-6' },
+                    React.createElement(Section, { title: '基础功能' },
+                        React.createElement('p', null, '欢迎使用 SQL 自动化编写助手！本工具旨在帮助您通过自然语言快速生成和优化 SQL 查询。'),
+                        React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
+                            React.createElement('li', null, React.createElement('strong', null, '对话式生成: '), '在下方的输入框中输入您的数据需求，点击发送即可生成 SQL。'),
+                            React.createElement('li', null, React.createElement('strong', null, '持续优化: '), '您可以继续输入指令，对已生成的 SQL 进行修改，例如 "添加 xx 条件" 或 "按 xx 排序"。'),
+                            React.createElement('li', null, React.createElement('strong', null, '编辑与重生成: '), '将鼠标悬停在您的消息上可进行编辑。您也可以点击 "重新生成" 按钮让 AI 重新回答最后一个问题。'),
+                            React.createElement('li', null, React.createElement('strong', null, '新对话: '), '点击 "开启新对话" 会将当前对话存入历史记录，并开始一个全新的会话。')
+                        )
+                    ),
+                    React.createElement(Section, { title: '配置管理 (设置面板)' },
+                         React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
+                            React.createElement('li', null, React.createElement('strong', null, '多套配置: '), '您可以创建多套配置方案，以适应不同的数据库或项目需求。'),
+                            React.createElement('li', null, React.createElement('strong', null, '自定义 Prompt: '), '通过修改引导提示、数据库结构等信息，您可以定制 AI 的行为，使其生成更符合您需求的 SQL。'),
+                            React.createElement('li', null, React.createElement('strong', null, 'API 设置: '), '在这里配置您的 API 服务地址和 Key。点击 "获取可用模型" 将自动拉取并填充模型列表。')
+                        ),
+                        React.createElement(Tip, { title: '高级提示：使用 YAML 格式' },
+                            '在 "数据库表结构" 或 "行业术语定义" 等字段中，使用清晰的 YAML 格式可以让 AI 更准确地理解和记忆您的上下文信息，从而提高生成质量。'
+                        )
+                    ),
+                    React.createElement(Section, { title: 'API URL 支持格式' },
+                        React.createElement('p', null, '本工具支持多种 API 格式：'),
+                        React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
+                            React.createElement('li', null, React.createElement('strong', null, 'Google Gemini: '), '官方标准链接，例如 ', React.createElement('code', {className: 'text-xs bg-[var(--accent-light)] text-[var(--accent-dark)] p-1 rounded'}, 'https://generativelanguage.googleapis.com/v1beta')),
+                            React.createElement('li', null, React.createElement('strong', null, 'OpenAI 兼容格式: '), '任何兼容 OpenAI 聊天接口的 API。程序会自动在链接后拼接 ', React.createElement('code', {className: 'text-xs bg-[var(--accent-light)] text-[var(--accent-dark)] p-1 rounded'}, '/chat/completions'), '。请提供基础 URL，例如 ', React.createElement('code', {className: 'text-xs bg-[var(--accent-light)] text-[var(--accent-dark)] p-1 rounded'}, 'https://api.example.com/v1'))
+                        )
+                    )
+                )
+            );
+        };
+
         // --- From App.tsx ---
         const App = () => {
             const [isSettingsOpen, setSettingsOpen] = useState(false);
             const [isHistoryOpen, setHistoryOpen] = useState(false);
+            const [isTutorialOpen, setTutorialOpen] = useState(false);
+            const [theme, setTheme] = useLocalStorage(LOCAL_STORAGE_THEME_KEY, 'light');
+            const [toastMessage, setToastMessage] = useState(null);
             
             const [profiles, setProfiles] = useLocalStorage(LOCAL_STORAGE_PROFILES_KEY, [DEFAULT_PROFILE]);
             const [activeProfileId, setActiveProfileId] = useLocalStorage(LOCAL_STORAGE_ACTIVE_PROFILE_ID_KEY, DEFAULT_PROFILE.id);
@@ -1059,22 +1341,46 @@
                 return profiles.find(p => p.id === activeProfileId) || profiles[0] || DEFAULT_PROFILE;
             }, [profiles, activeProfileId]);
 
+            useEffect(() => {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }, [theme]);
+            
+            const showToast = useCallback((message) => {
+                setToastMessage(message);
+                setTimeout(() => setToastMessage(null), 3000);
+            }, []);
+
             const handleClosePanels = useCallback(() => {
                 setSettingsOpen(false);
                 setHistoryOpen(false);
+                setTutorialOpen(false);
             }, []);
 
             const handleToggleSettings = useCallback((open) => {
                 const nextState = open ?? !isSettingsOpen;
                 setSettingsOpen(nextState);
-                if (nextState) setHistoryOpen(false);
+                if (nextState) { setHistoryOpen(false); setTutorialOpen(false); }
             }, [isSettingsOpen]);
 
             const handleToggleHistory = useCallback((open) => {
                 const nextState = open ?? !isHistoryOpen;
                 setHistoryOpen(nextState);
-                if (nextState) setSettingsOpen(false);
+                if (nextState) { setSettingsOpen(false); setTutorialOpen(false); }
             }, [isHistoryOpen]);
+            
+            const handleToggleTutorial = useCallback((open) => {
+                const nextState = open ?? !isTutorialOpen;
+                setTutorialOpen(nextState);
+                if (nextState) { setSettingsOpen(false); setHistoryOpen(false); }
+            }, [isTutorialOpen]);
+            
+            const handleToggleTheme = useCallback(() => {
+                setTheme(prev => prev === 'light' ? 'dark' : 'light');
+            }, [setTheme]);
 
             const addHistoryItem = useCallback((item) => {
                 setHistory(prev => [{ ...item, time: Date.now() }, ...prev].slice(0, 10));
@@ -1102,7 +1408,7 @@
                     p.id === activeProfileId ? { ...p, settings: updatedSettings } : p
                 );
                 setProfiles(updatedProfiles);
-                alert('配置已保存！');
+                showToast('配置已保存！');
                 handleClosePanels();
             };
             
@@ -1174,12 +1480,19 @@
                 }
             }, [profiles, activeProfileId, setProfiles, setActiveProfileId]);
 
-            const isPanelOpen = isSettingsOpen || isHistoryOpen;
+            const isPanelOpen = isSettingsOpen || isHistoryOpen || isTutorialOpen;
 
             return (
-                React.createElement('div', { className: 'min-h-screen' },
-                    React.createElement(Header, { onHistoryClick: () => handleToggleHistory(), onSettingsClick: () => handleToggleSettings() }),
-                    React.createElement('main', { className: 'p-4 lg:max-w-4xl mx-auto flex flex-col gap-4' },
+                React.createElement('div', { className: 'min-h-screen relative' },
+                    toastMessage && React.createElement(Toast, { message: toastMessage }),
+                    React.createElement(Header, { 
+                        onHistoryClick: () => handleToggleHistory(), 
+                        onSettingsClick: () => handleToggleSettings(),
+                        onTutorialClick: () => handleToggleTutorial(),
+                        onToggleTheme: handleToggleTheme,
+                        theme: theme
+                    }),
+                    React.createElement('main', { className: 'p-4 lg:max-w-4xl mx-auto flex flex-col gap-4 relative z-10' },
                         React.createElement(MainContent, {
                             userQuery,
                             setUserQuery,
@@ -1201,7 +1514,8 @@
                         onDelete: handleDeleteProfile,
                         onRename: handleRenameProfile,
                         onExport: handleExportProfile,
-                        onClearAll: handleClearAllData
+                        onClearAll: handleClearAllData,
+                        onShowToast: showToast
                     }),
                     React.createElement(HistoryPanel, {
                         isOpen: isHistoryOpen,
@@ -1209,6 +1523,10 @@
                         history: history,
                         setHistory: setHistory,
                         onLoadConversation: handleLoadConversationFromHistory
+                    }),
+                    React.createElement(TutorialPanel, {
+                        isOpen: isTutorialOpen,
+                        onClose: () => handleToggleTutorial(false)
                     }),
                     isPanelOpen && React.createElement('div', {
                         onClick: handleClosePanels,
