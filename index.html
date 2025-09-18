@@ -7,6 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20448%20512'%3E%3Cpath%20fill='%234a90e2'%20d='M448%2080v48c0%2044.2-100.3%2080-224%2080S0%20172.2%200%20128V80C0%2035.8%20100.3%200%20224%200S448%2035.8%20448%2080zM393.2%20214.7c20.8-7.4%2039.9-16.9%2054.8-28.6V288c0%2044.2-100.3%2080-224%2080S0%20332.2%200%20288V186.1c14.9%2011.8%2034%2021.2%2054.8%2028.6C99.7%20230.7%20159.5%20240%20224%20240s124.3-9.3%20169.2-25.3zM448%20368v48c0%2044.2-100.3%2080-224%2080S0%20460.2%200%20416V368c0-17.5%2013-32.9%2031.5-41.2C86.2%20344.3%20152.6%20352%20224%20352s137.8-7.7%20192.5-25.2c18.5%208.3%2031.5%2023.7%2031.5%2041.2z'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
@@ -104,6 +105,9 @@
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .ios-button:hover {
             background: linear-gradient(135deg, var(--accent-dark), var(--accent-color));
@@ -182,14 +186,19 @@
         .mono { 
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; 
         }
+        .copy-code-button {
+            font-family: 'Inter', sans-serif;
+        }
         .markdown-content {
             line-height: 1.6;
             font-size: 14px;
         }
         .markdown-content pre {
+            position: relative;
             background: linear-gradient(135deg, #2d3748, #1a202c);
             color: #e2e8f0;
             padding: 1rem;
+            padding-top: 3rem;
             border-radius: 12px;
             overflow-x: auto;
             font-size: 0.875em;
@@ -231,6 +240,36 @@
         }
         .markdown-content > :last-child {
             margin-bottom: 0;
+        }
+        /* Markdown Table Styles */
+        .markdown-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .markdown-content th, .markdown-content td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .markdown-content th {
+            background-color: var(--accent-light);
+            font-weight: 600;
+        }
+        .dark .markdown-content th {
+             background-color: #2f3336;
+        }
+        .markdown-content tr:last-child td {
+            border-bottom: none;
+        }
+        .markdown-content tr:nth-of-type(even) {
+            background-color: rgba(248, 250, 251, 0.5);
+        }
+        .dark .markdown-content tr:nth-of-type(even) {
+            background-color: rgba(47, 51, 54, 0.3);
         }
         .dark textarea, .dark select, .dark input { 
             background-color: #1c2128; 
@@ -295,6 +334,11 @@
             border: 2px solid transparent;
             border-radius: 12px;
             transition: all 0.3s;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;  /* IE and Edge */
+        }
+        .input-textarea::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, and Opera */
         }
         .input-textarea:focus {
             border-color: var(--text-secondary);
@@ -349,15 +393,51 @@
             justify-content: center;
             box-sizing: border-box;
         }
-        /* Code block enhancements */
-        .code-block {
-            position: relative;
-            background: linear-gradient(135deg, #2d3748, #1a202c);
-            border: 1px solid rgba(74, 144, 226, 0.2);
-            border-radius: 12px;
+        /* Collapsible "Thinking Process" styles */
+        details > summary {
+            list-style: none;
+            cursor: pointer;
         }
-        .dark .code-block {
-            background: linear-gradient(135deg, #1a1f36, #0f1419);
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        .summary-text {
+            color: var(--text-secondary);
+            transition: color 0.2s;
+        }
+        summary:hover .summary-text {
+            color: var(--accent-color);
+        }
+        .details-arrow {
+            display: inline-block;
+            width: 0; 
+            height: 0; 
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-left: 6px solid currentColor;
+            transition: transform 0.3s ease-in-out;
+            margin-right: 8px;
+            color: var(--text-secondary);
+        }
+        summary:hover .details-arrow {
+             color: var(--accent-color);
+        }
+        details[open] .details-arrow {
+            transform: rotate(90deg);
+        }
+        .thinking-process-content {
+            position: relative;
+            padding-left: 1.25rem;
+        }
+        .thinking-process-content::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 0.75rem;
+            bottom: 0.75rem;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--gradient-from), var(--gradient-to));
+            border-radius: 999px;
         }
     </style>
 <script type="importmap">
@@ -460,12 +540,93 @@
             'terminology': '以下是业务相关的专业术语定义，请在理解用户需求时参考：'
         };
 
-        const generateSqlStream = async (chatHistory, settings, signal, onChunk, onComplete, onError) => {
+        const generateSimpleText = async (settings, prompt, signal) => {
+            let requestUrl;
+            let requestOptions;
+            const isGemini = settings.apiUrl.includes('googleapis.com');
+
             try {
-                const isGemini = settings.apiUrl.includes('googleapis.com');
+                if (isGemini) {
+                    requestUrl = `${settings.apiUrl}/models/${settings.apiModel}:generateContent?key=${settings.apiKey}`;
+                    const body = {
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { temperature: 0.1, topP: 0.95 }
+                    };
+                    requestOptions = {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body),
+                        signal
+                    };
+                } else {
+                    if (settings.apiUrl.includes('/chat/completions')) {
+                        requestUrl = settings.apiUrl;
+                    } else {
+                        const baseUrl = settings.apiUrl.endsWith('/') ? settings.apiUrl : settings.apiUrl + '/';
+                        requestUrl = new URL('chat/completions', baseUrl).href;
+                    }
+
+                    const messages = [{ role: 'user', content: prompt }];
+                    requestOptions = {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${settings.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: settings.apiModel,
+                            messages: messages,
+                            temperature: 0.1,
+                            stream: false
+                        }),
+                        signal
+                    };
+                }
+
+                console.info('API Call (Simple Text) Started:', { url: requestUrl, method: 'POST' });
+                console.log('Prompt:', prompt);
+
+                const response = await fetch(requestUrl, requestOptions);
+
+                if (!response.ok) {
+                    let errData;
+                    try {
+                        errData = await response.json();
+                    } catch (e) {
+                        errData = { error: { message: await response.text() } };
+                    }
+                    let errMsg = errData.error?.message || `HTTP error! status: ${response.status}`;
+                    throw new Error(errMsg);
+                }
+
+                const data = await response.json();
+                
+                let resultText;
+                if (isGemini) {
+                    resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                } else {
+                    resultText = data.choices?.[0]?.message?.content || '';
+                }
+                
+                console.log('API Call (Simple Text) Succeeded. Response:', resultText);
+                return resultText;
+
+            } catch (error) {
+                console.error('API Call (Simple Text) Failed:', error instanceof Error ? error.message : String(error));
+                if (error instanceof Error) {
+                    throw error;
+                }
+                throw new Error(String(error));
+            }
+        };
+
+        const generateSqlStream = async (chatHistory, settings, signal, onChunk, onComplete, onError) => {
+            let requestUrl;
+            let requestOptions;
+            const isGemini = settings.apiUrl.includes('googleapis.com');
+            
+            try {
                 let systemPromptBase;
-                let requestUrl;
-                let requestOptions;
 
                 let customPrompts = "";
                 (Object.keys(BUILT_IN_PROMPTS)).forEach(key => {
@@ -533,6 +694,13 @@
                     };
                 }
                 
+                console.info('API Call (Stream) Started:', {
+                    url: requestUrl,
+                    method: 'POST',
+                    model: settings.apiModel,
+                    historyLength: chatHistory.length
+                });
+
                 const response = await fetch(requestUrl, requestOptions);
 
                 if (!response.ok) {
@@ -553,6 +721,7 @@
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let buffer = '';
+                let fullResponseText = '';
                 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -566,6 +735,7 @@
                         if (line.startsWith('data: ')) {
                             const jsonStr = line.substring(6);
                             if (!isGemini && jsonStr === '[DONE]') {
+                                console.log('API Call (Stream) Completed Successfully. Full Response:', fullResponseText);
                                 onComplete();
                                 return;
                             }
@@ -578,6 +748,7 @@
                                     content = chunk.choices?.[0]?.delta?.content;
                                 }
                                 if (content) {
+                                    fullResponseText += content;
                                     onChunk(content);
                                 }
                             } catch (e) {
@@ -586,8 +757,10 @@
                         }
                     }
                 }
+                console.log('API Call (Stream) Completed Successfully. Full Response:', fullResponseText);
                 onComplete();
             } catch (error) {
+                 console.error('API Call (Stream) Failed:', error instanceof Error ? error.message : String(error), error);
                  if (error instanceof Error) {
                     onError(error);
                 } else {
@@ -597,51 +770,64 @@
         };
 
         const fetchModels = async (apiUrl, apiKey) => {
-            if (!apiUrl.trim() || !apiKey.trim()) {
-                throw new Error('API URL and Key cannot be empty.');
-            }
-
-            const isGemini = apiUrl.includes('googleapis.com');
             let modelsUrl;
             let requestOptions;
-
-            if (isGemini) {
-                modelsUrl = `${apiUrl}/models?key=${apiKey}`;
-                requestOptions = { method: 'GET' };
-            } else {
-                if (!/^https?:\/\//.test(apiUrl)) {
-                    throw new Error('API URL must start with http:// or https://');
+            try {
+                if (!apiUrl.trim() || !apiKey.trim()) {
+                    throw new Error('API URL and Key cannot be empty.');
                 }
-                if (apiUrl.includes('/chat/completions')) {
-                    modelsUrl = apiUrl.replace('/chat/completions', '/models');
+
+                const isGemini = apiUrl.includes('googleapis.com');
+                
+                if (isGemini) {
+                    modelsUrl = `${apiUrl}/models?key=${apiKey}`;
+                    requestOptions = { method: 'GET' };
                 } else {
-                    modelsUrl = new URL('/v1/models', apiUrl).href;
+                    if (!/^https?:\/\//.test(apiUrl)) {
+                        throw new Error('API URL must start with http:// or https://');
+                    }
+                    if (apiUrl.includes('/chat/completions')) {
+                        modelsUrl = apiUrl.replace('/chat/completions', '/models');
+                    } else {
+                        modelsUrl = new URL('/v1/models', apiUrl).href;
+                    }
+                    requestOptions = {
+                        method: 'GET',
+                        headers: { 'Authorization': `Bearer ${apiKey}` }
+                    };
                 }
-                requestOptions = {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${apiKey}` }
-                };
-            }
+                
+                console.info('API Call (Fetch Models) Started:', { url: modelsUrl, method: 'GET' });
 
-            const response = await fetch(modelsUrl, requestOptions);
+                const response = await fetch(modelsUrl, requestOptions);
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (isGemini) {
-                if (data.models && Array.isArray(data.models)) {
-                    return data.models.map(m => m.name.replace('models/', '')).filter(Boolean).sort();
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-            } else {
-                if (data.data && Array.isArray(data.data)) {
-                    return data.data.map((m) => m.id).filter(Boolean).sort();
-                }
-            }
 
-            throw new Error('Invalid response format from models endpoint.');
+                const data = await response.json();
+                let models = [];
+
+                if (isGemini) {
+                    if (data.models && Array.isArray(data.models)) {
+                        models = data.models.map(m => m.name.replace('models/', '')).filter(Boolean).sort();
+                    }
+                } else {
+                    if (data.data && Array.isArray(data.data)) {
+                        models = data.data.map((m) => m.id).filter(Boolean).sort();
+                    }
+                }
+
+                if (models.length > 0) {
+                    console.log('API Call (Fetch Models) Succeeded. Models found:', models);
+                    return models;
+                }
+                
+                throw new Error('Invalid response format or no models found from endpoint.');
+            } catch (error) {
+                console.error('API Call (Fetch Models) Failed:', error instanceof Error ? error.message : String(error));
+                throw error;
+            }
         };
 
 
@@ -692,10 +878,12 @@
         const SunIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round"}, React.createElement('circle',{cx:"12",cy:"12",r:"5"}), React.createElement('line',{x1:"12",y1:"1",x2:"12",y2:"3"}), React.createElement('line',{x1:"12",y1:"21",x2:"12",y2:"23"}), React.createElement('line',{x1:"4.22",y1:"4.22",x2:"5.64",y2:"5.64"}), React.createElement('line',{x1:"18.36",y1:"18.36",x2:"19.78",y2:"19.78"}), React.createElement('line',{x1:"1",y1:"12",x2:"3",y2:"12"}), React.createElement('line',{x1:"21",y1:"12",x2:"23",y2:"12"}), React.createElement('line',{x1:"4.22",y1:"19.78",x2:"5.64",y2:"18.36"}), React.createElement('line',{x1:"18.36",y1:"5.64",x2:"19.78",y2:"4.22"}));
         const MoonIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round"}, React.createElement('path',{d:"M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"}));
         const InfoIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, React.createElement('circle',{cx:"12",cy:"12",r:"10"}), React.createElement('line',{x1:"12",y1:"16",x2:"12",y2:"12"}), React.createElement('line',{x1:"12",y1:"8",x2:"12.01",y2:"8"}));
+        const ConsoleIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round"}, React.createElement('polyline', {points: "4 17 10 11 4 5"}), React.createElement('line', {x1: "12", y1: "19", x2: "20", y2: "19"}));
         const SendIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: "h-5 w-5"}, React.createElement('line', { x1: "22", y1: "2", x2: "11", y2: "13" }), React.createElement('polygon', { points: "22 2 15 22 11 13 2 9 22 2" }));
         const StopIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "currentColor", className: "h-5 w-5 text-white" }, React.createElement('rect', { x: "6", y: "6", width: "12", height: "12", rx: "1" }));
         const EditIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, React.createElement('path', { d: "M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"}));
         const RegenerateIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: "h-5 w-5"}, React.createElement('path', { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" }), React.createElement('path', { d: "M21 3v5h-5" }), React.createElement('path', { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" }), React.createElement('path', { d: "M3 21v-5h5" }));
+        const PlusIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round"}, React.createElement('line',{x1:"12",y1:"5",x2:"12",y2:"19"}), React.createElement('line',{x1:"5",y1:"12",x2:"19",y2:"12"}));
 
         // --- From components/Toast.tsx ---
         const Toast = ({ message }) => {
@@ -703,16 +891,26 @@
         };
 
         // --- From components/Header.tsx ---
-        const Header = ({ onHistoryClick, onSettingsClick, onTutorialClick, onToggleTheme, theme }) => {
+        const Header = ({ onHistoryClick, onSettingsClick, onTutorialClick, onToggleTheme, onConsoleClick, onNewChat, theme, activeProfileName }) => {
             return (
-                React.createElement('header', { className: 'ios-header sticky top-0 z-30 px-4 py-3' },
+                React.createElement('header', { className: 'ios-header sticky top-0 z-30 px-4 py-3 flex-shrink-0' },
                     React.createElement('div', { className: 'lg:max-w-7xl mx-auto flex justify-between items-center' },
-                        React.createElement('div', { className: 'flex-1 flex justify-start' },
+                        React.createElement('div', { className: 'flex-1 flex justify-start items-center gap-1' },
                             React.createElement('button', { onClick: onHistoryClick, className: 'icon-button p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '查看历史' },
                                 React.createElement(HistoryIcon, null)
+                            ),
+                            React.createElement('button', { onClick: onConsoleClick, className: 'icon-button p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '查看控制台' },
+                                React.createElement(ConsoleIcon, null)
+                            ),
+                             React.createElement('button', { onClick: onNewChat, className: 'icon-button p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '开启新对话' },
+                                React.createElement(PlusIcon, null)
                             )
                         ),
-                        React.createElement('h1', { className: 'text-xl font-bold text-center bg-gradient-to-r from-[var(--gradient-from)] to-[var(--gradient-to)] bg-clip-text text-transparent' }, 'SQL 自动化编写助手'),
+                        React.createElement('div', { className: 'flex items-center gap-2' },
+                            React.createElement('h1', { className: 'text-xl font-bold bg-gradient-to-r from-[var(--gradient-from)] to-[var(--gradient-to)] bg-clip-text text-transparent' }, 'SQL 自动化编写助手'),
+                            React.createElement('span', { className: 'w-2 h-2 bg-gradient-to-r from-[var(--gradient-from)] to-[var(--gradient-to)] rounded-full' }),
+                            React.createElement('span', { className: 'text-xl font-semibold text-gray-600 dark:text-gray-400' }, activeProfileName)
+                        ),
                         React.createElement('div', { className: 'flex-1 flex justify-end items-center gap-1' },
                            React.createElement('button', { onClick: onToggleTheme, className: 'icon-button p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '切换主题' },
                                 theme === 'light' ? React.createElement(MoonIcon, null) : React.createElement(SunIcon, null)
@@ -728,319 +926,205 @@
                 )
             );
         };
+        
+        // --- From components/MarkdownRenderer.tsx ---
+        const MarkdownRenderer = ({ markdown }) => {
+            const contentRef = useRef(null);
+
+            useEffect(() => {
+                if (!contentRef.current || !window.marked) return;
+
+                const rawHtml = window.marked.parse(markdown || '');
+                contentRef.current.innerHTML = rawHtml;
+                
+                const preBlocks = contentRef.current.querySelectorAll('pre');
+                
+                preBlocks.forEach(pre => {
+                    if (pre.querySelector('.copy-code-button')) return;
+
+                    pre.style.position = 'relative';
+                    pre.style.paddingTop = '3rem';
+
+                    const copyButton = document.createElement('button');
+                    const copyText = '复制';
+                    const copiedText = '已复制!';
+                    copyButton.innerHTML = `<i class="fa-regular fa-clipboard mr-1"></i> ${copyText}`;
+                    copyButton.className = 'copy-code-button ios-button ios-button-secondary text-sm font-semibold py-1 px-3 absolute top-2 right-2 z-10';
+
+                    copyButton.onclick = () => {
+                        const code = pre.querySelector('code');
+                        if (code) {
+                            navigator.clipboard.writeText(code.innerText).then(() => {
+                                copyButton.innerHTML = `<i class="fa-solid fa-check mr-1"></i> ${copiedText}`;
+                                setTimeout(() => {
+                                    copyButton.innerHTML = `<i class="fa-regular fa-clipboard mr-1"></i> ${copyText}`;
+                                }, 2000);
+                            }).catch(err => {
+                                copyButton.innerText = '复制失败!';
+                                console.error('Failed to copy code: ', err);
+                            });
+                        }
+                    };
+                    pre.appendChild(copyButton);
+                });
+
+            }, [markdown]);
+
+            return React.createElement('div', {
+                ref: contentRef,
+                className: 'markdown-content'
+            });
+        };
+        
+        // --- From components/AssistantMessageRenderer.tsx ---
+        const AssistantMessageRenderer = ({ markdown }) => {
+            const { thinkingProcess, finalAnswer } = useMemo(() => {
+                const fullMarkdown = markdown || '';
+                const codeBlockRegex = /```(?:[a-zA-Z]*)?\n[\s\S]*?\n```/g;
+                const matches = [...fullMarkdown.matchAll(codeBlockRegex)];
+
+                if (matches.length <= 1) {
+                    return { thinkingProcess: null, finalAnswer: fullMarkdown };
+                }
+
+                const lastMatch = matches[matches.length - 1];
+                const lastIndex = lastMatch.index;
+
+                const thinkingPart = fullMarkdown.substring(0, lastIndex).trim();
+                const finalPart = fullMarkdown.substring(lastIndex).trim();
+
+                if (!thinkingPart) {
+                    return { thinkingProcess: null, finalAnswer: fullMarkdown };
+                }
+
+                return { thinkingProcess: thinkingPart, finalAnswer: finalPart };
+            }, [markdown]);
+
+            return React.createElement(React.Fragment, null,
+                thinkingProcess && (
+                    React.createElement('details', { className: 'mb-3' },
+                        React.createElement('summary', { className: 'text-sm font-medium flex items-center' },
+                            React.createElement('span', { className: 'details-arrow' }),
+                            React.createElement('span', { className: 'summary-text' }, '查看思考过程')
+                        ),
+                        React.createElement('div', { className: 'thinking-process-content pt-3 mt-2 border-t border-dashed border-[var(--border-color)]' },
+                            React.createElement(MarkdownRenderer, { markdown: thinkingProcess })
+                        )
+                    )
+                ),
+                React.createElement(MarkdownRenderer, { markdown: finalAnswer })
+            );
+        };
 
         // --- From components/MainContent.tsx ---
-        const MainContent = ({ userQuery, setUserQuery, conversation, setConversation, activeSettings, onNewChat, onSettingsClick, activeProfileName }) => {
-            const [isLoading, setIsLoading] = useState(false);
-            const [copySuccessIndex, setCopySuccessIndex] = useState(-1);
-            const [editingIndex, setEditingIndex] = useState(null);
-            const [editedContent, setEditedContent] = useState('');
-            const abortControllerRef = useRef(null);
+        const MainContent = ({ conversation, isLoading, editingIndex, editedContent, setEditedContent, onSaveEdit, onCancelEdit, onStartEdit }) => {
             const chatContainerRef = useRef(null);
             const scrollTopBeforeEdit = useRef(null);
+            const prevEditingIndex = useRef(editingIndex);
 
             useEffect(() => {
                 const chatContainer = chatContainerRef.current;
                 if (!chatContainer) return;
 
-                if (scrollTopBeforeEdit.current !== null) {
-                    chatContainer.scrollTop = scrollTopBeforeEdit.current;
-                    if (editingIndex === null) {
+                const wasEditing = prevEditingIndex.current !== null && editingIndex === null;
+
+                if (wasEditing) {
+                    // Just finished editing, restore scroll position and do nothing else.
+                    if (scrollTopBeforeEdit.current !== null) {
+                        chatContainer.scrollTop = scrollTopBeforeEdit.current;
                         scrollTopBeforeEdit.current = null;
                     }
-                } else if (editingIndex === null) {
+                } else if (editingIndex !== null) {
+                    // Currently editing, keep scroll position stable.
+                    if (scrollTopBeforeEdit.current !== null) {
+                       chatContainer.scrollTop = scrollTopBeforeEdit.current;
+                    }
+                } else {
+                    // Not editing and was not editing before, so scroll to bottom for new messages/streaming.
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 }
+
+                prevEditingIndex.current = editingIndex;
             }, [conversation, isLoading, editingIndex]);
 
-            const runGeneration = async (chatHistoryForApi, isRegeneration = false, regenerationIndex = -1) => {
-                if (!activeSettings.apiUrl || !activeSettings.apiKey) {
-                    alert('请先在设置中配置API！');
-                    onSettingsClick();
-                    return;
-                }
-                
-                setIsLoading(true);
-                abortControllerRef.current = new AbortController();
-
-                if (!isRegeneration) {
-                    setConversation(prev => [...prev, { role: 'assistant', content: '', isStreaming: true }]);
-                } else {
-                    setConversation(prev => [...prev.slice(0, regenerationIndex + 1), { role: 'assistant', content: '', isStreaming: true }]);
-                }
-                
-                const onChunk = (chunk) => {
-                    setConversation(prev => {
-                        const lastMessage = prev[prev.length - 1];
-                        if (lastMessage && lastMessage.role === 'assistant') {
-                            const updatedLastMessage = { ...lastMessage, content: lastMessage.content + chunk };
-                            return [...prev.slice(0, -1), updatedLastMessage];
-                        }
-                        return prev;
-                    });
-                };
-                
-                const onComplete = () => {
-                    setConversation(prev => {
-                        const lastMessage = prev[prev.length - 1];
-                        if (lastMessage && lastMessage.role === 'assistant') {
-                            const rawContent = lastMessage.content.trim();
-                            const codeBlockRegex = /```(?:[a-zA-Z]*)?\n?([\s\S]+?)```/g;
-                            const matches = [...rawContent.matchAll(codeBlockRegex)];
-
-                            let thinking = rawContent;
-                            let sql = '';
-
-                            if (matches.length > 0) {
-                                const lastMatch = matches[matches.length - 1];
-                                sql = lastMatch[1].trim();
-                                thinking = rawContent.substring(0, lastMatch.index).trim();
-                            } else {
-                                sql = rawContent; 
-                                thinking = '';
-                            }
-
-                            const updatedLastMessage = { 
-                                ...lastMessage, 
-                                content: rawContent, 
-                                thinking: thinking,
-                                sql: sql,
-                                isStreaming: false 
-                            };
-                            return [...prev.slice(0, -1), updatedLastMessage];
-                        }
-                        return prev;
-                    });
-                    setIsLoading(false);
-                    abortControllerRef.current = null;
-                };
-
-                const onError = (error) => {
-                    setConversation(prev => {
-                        const lastMessage = prev[prev.length - 1];
-                        const isAbort = error instanceof Error && error.name === 'AbortError';
-                        const content = isAbort ? '-- 生成已手动停止 --' : `-- 生成 SQL 时出错 --\n${error.message}`;
-                
-                        if (lastMessage && lastMessage.role === 'assistant') {
-                            const updatedLastMessage = { ...lastMessage, sql: lastMessage.sql ? lastMessage.sql + `\n\n${content}` : content, isError: true, isStreaming: false };
-                            return [...prev.slice(0, -1), updatedLastMessage];
-                        }
-                        return [...prev, { role: 'assistant', sql: content, isError: true, isStreaming: false }];
-                    });
-                    setIsLoading(false);
-                    abortControllerRef.current = null;
-                };
-
-                await generateSqlStream(
-                    chatHistoryForApi,
-                    activeSettings,
-                    abortControllerRef.current.signal,
-                    onChunk,
-                    onComplete,
-                    onError
-                );
-            };
-
-            const handleSendMessage = useCallback(async () => {
-                const trimmedQuery = userQuery.trim();
-                if (!trimmedQuery) {
-                    alert('请输入您的需求！');
-                    return;
-                }
-                const userMessage = { role: 'user', content: trimmedQuery };
-                const newConversation = [...conversation, userMessage];
-                setConversation(newConversation);
-                setUserQuery('');
-                await runGeneration(newConversation, false);
-            }, [userQuery, conversation, activeSettings, onSettingsClick, setConversation, setUserQuery]);
-
-            const handleSaveEdit = useCallback(() => {
-                if (editingIndex === null) return;
-
-                const trimmedContent = editedContent.trim();
-                if (!trimmedContent) {
-                    alert('内容不能为空！');
-                    return;
-                }
-                
-                const updatedConversation = [...conversation];
-                updatedConversation[editingIndex] = { ...updatedConversation[editingIndex], content: trimmedContent };
-                
-                setConversation(updatedConversation);
-                setEditingIndex(null);
-                setEditedContent('');
-            }, [editingIndex, editedContent, conversation, setConversation]);
-            
-            const handleRegenerateLastResponse = useCallback(async () => {
-                let lastUserMessageIndex = -1;
-                for (let i = conversation.length - 1; i >= 0; i--) {
-                    if (conversation[i].role === 'user') {
-                        lastUserMessageIndex = i;
-                        break;
-                    }
-                }
-
-                if (lastUserMessageIndex === -1) return;
-                
-                const chatHistoryForApi = conversation.slice(0, lastUserMessageIndex + 1);
-                setConversation(chatHistoryForApi);
-                await runGeneration(chatHistoryForApi, true, lastUserMessageIndex);
-
-            }, [conversation, activeSettings, setConversation]);
-
-            const handleStop = () => {
-                if (abortControllerRef.current) {
-                    abortControllerRef.current.abort();
-                }
-            };
-
-            const handleCopy = (sql, index) => {
-                if (!sql) return;
-                navigator.clipboard.writeText(sql).then(() => {
-                    setCopySuccessIndex(index);
-                    setTimeout(() => setCopySuccessIndex(-1), 2000);
-                }).catch(err => {
-                    console.error('Failed to copy:', err);
-                    alert('复制失败，请手动选择复制');
-                });
-            };
-
-            const handleKeyDown = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
-                    e.preventDefault();
-                    handleSendMessage();
-                }
-            };
-            
             const startEditing = (index, content) => {
                 if (chatContainerRef.current) {
                     scrollTopBeforeEdit.current = chatContainerRef.current.scrollTop;
                 }
-                setEditingIndex(index);
-                setEditedContent(content);
+                onStartEdit(index, content);
             };
 
-            const cancelEditing = () => {
-                setEditingIndex(null);
-                setEditedContent('');
-            };
-
-            return React.createElement(React.Fragment, null,
-                React.createElement('div', { className: 'flex justify-between items-center mb-4' },
-                    React.createElement('h2', { className: 'text-lg font-semibold flex items-center gap-2' }, 
-                        React.createElement('span', { className: 'w-3 h-3 bg-gradient-to-r from-[var(--gradient-from)] to-[var(--gradient-to)] rounded-full' }),
-                        activeProfileName
-                    ),
-                    React.createElement('button', { onClick: onNewChat, className: 'ios-button ios-button-secondary py-2 px-4 text-sm' }, '开启新对话')
-                ),
-                React.createElement('div', { className: 'ios-card flex flex-col h-[calc(100vh-280px)] min-h-[300px] max-h-[600px]' },
-                    React.createElement('div', { ref: chatContainerRef, className: 'flex-grow overflow-y-auto p-5 space-y-6' },
-                        conversation.length === 0 ? (
-                            React.createElement('div', { className: 'text-center text-gray-500 flex flex-col justify-center items-center h-full' },
-                                React.createElement('div', { className: 'w-20 h-20 bg-gradient-to-br from-[var(--gradient-from)] to-[var(--gradient-to)] rounded-full mb-4 flex items-center justify-center shadow-lg' },
-                                    React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 448 512', className: 'w-10 h-10 fill-white' },
-                                        React.createElement('path', { d: 'M448 80v48c0 44.2-100.3 80-224 80S0 172.2 0 128V80C0 35.8 100.3 0 224 0S448 35.8 448 80zM393.2 214.7c20.8-7.4 39.9-16.9 54.8-28.6V288c0 44.2-100.3 80-224 80S0 332.2 0 288V186.1c14.9 11.8 34 21.2 54.8 28.6C99.7 230.7 159.5 240 224 240s124.3-9.3 169.2-25.3zM448 368v48c0 44.2-100.3 80-224 80S0 460.2 0 416V368c0-17.5 13-32.9 31.5-41.2C86.2 344.3 152.6 352 224 352s137.8-7.7 192.5-25.2c18.5 8.3 31.5 23.7 31.5 41.2z' })
-                                    )
-                                ),
-                                React.createElement('h3', { className: 'text-xl font-semibold mb-2' }, 'SQL 自动化编写助手'),
-                                React.createElement('p', null, '输入您的需求开始生成SQL。'),
-                                React.createElement('p', null, '您可以持续对话，对生成的SQL进行修改和完善。')
-                            )
-                        ) : (
-                            conversation.map((msg, index) =>
-                                msg.role === 'user' ? (
-                                    React.createElement('div', {
-                                        key: index,
-                                        className: `flex justify-end group ${editingIndex === index ? '' : 'items-end gap-2'}`.trim()
-                                    },
-                                    editingIndex === index ?
-                                        React.createElement('div', { className: 'user-message p-3 w-full max-w-[75%]' },
-                                            React.createElement('textarea', {
-                                                value: editedContent,
-                                                onChange: e => setEditedContent(e.target.value),
-                                                className: 'w-full bg-white/20 rounded-md p-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50',
-                                                rows: 3
-                                            }),
-                                            React.createElement('div', { className: 'flex justify-end gap-2 mt-2' },
-                                                React.createElement('button', { onClick: cancelEditing, className: 'text-xs px-3 py-1 rounded-lg font-semibold bg-gray-400 text-white hover:bg-gray-500 transition transform active:scale-95' }, '取消'),
-                                                React.createElement('button', { onClick: handleSaveEdit, className: 'text-xs px-3 py-1 rounded-lg font-semibold bg-white text-[var(--accent-color)] hover:bg-gray-100 transition transform active:scale-95' }, '保存')
-                                            )
-                                        ) :
-                                        [
-                                            React.createElement('button', { 
-                                                key: `edit-${index}`, 
-                                                onClick: () => startEditing(index, msg.content), 
-                                                disabled: isLoading, 
-                                                className: 'opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 hover:text-[var(--accent-color)] disabled:opacity-20 active:scale-90 mb-1 flex-shrink-0', 'aria-label': '编辑' 
-                                            },
-                                                React.createElement(EditIcon, null)
-                                            ),
-                                            React.createElement('div', { 
-                                                key: `msg-${index}`, 
-                                                className: 'user-message p-3 max-w-[75%] whitespace-pre-wrap break-words' 
-                                            }, msg.content)
-                                        ]
-                                    )
-                                ) : (
-                                    React.createElement('div', { key: index, className: 'flex justify-start' },
-                                        React.createElement('div', { className: `assistant-message p-3 w-full ${msg.isError ? 'border-l-4 border-[var(--danger-bg)]' : ''}` },
-                                            React.createElement('div', { className: 'flex justify-between items-center mb-2' },
-                                                React.createElement('span', { className: 'text-sm font-semibold text-[var(--accent-color)]' }, '助手'),
-                                                !msg.isError && !msg.isStreaming && React.createElement('button', { onClick: () => handleCopy(msg.sql, index), className: 'ios-button ios-button-secondary text-xs py-1 px-3' }, 
-                                                  copySuccessIndex === index ? '已复制' : '复制'
-                                                )
-                                            ),
-                                            (msg.thinking && !msg.isStreaming) && React.createElement('details', { className: 'mb-2' },
-                                                React.createElement('summary', { className: 'text-xs text-gray-600 cursor-pointer select-none' }, '查看思考过程'),
-                                                React.createElement('div', {
-                                                    className: 'markdown-content mt-1 p-2 bg-gray-200 text-gray-700 rounded',
-                                                    dangerouslySetInnerHTML: { __html: window.marked ? window.marked.parse(msg.thinking || '') : msg.thinking }
-                                                })
-                                            ),
-                                            React.createElement('pre', { className: 'code-block p-3 overflow-x-auto text-sm mono whitespace-pre-wrap text-white' }, 
-                                                React.createElement('code', null, 
-                                                    msg.isStreaming ? msg.content : msg.sql,
-                                                    msg.isStreaming && React.createElement('span', { className: 'inline-block w-2 h-4 bg-[var(--accent-color)] animate-pulse ml-1 align-middle' })
-                                                )
-                                            )
+            return React.createElement('div', { className: 'ios-card flex flex-col flex-grow min-h-0' },
+                React.createElement('div', { ref: chatContainerRef, className: 'flex-grow overflow-y-auto p-5 space-y-6' },
+                    conversation.length === 0 ? (
+                        React.createElement('div', { className: 'text-center text-gray-500 flex flex-col justify-center items-center h-full' },
+                            React.createElement('div', { className: 'w-20 h-20 bg-gradient-to-br from-[var(--gradient-from)] to-[var(--gradient-to)] rounded-full mb-4 flex items-center justify-center shadow-lg' },
+                                React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 448 512', className: 'w-10 h-10 fill-white' },
+                                    React.createElement('path', { d: 'M448 80v48c0 44.2-100.3 80-224 80S0 172.2 0 128V80C0 35.8 100.3 0 224 0S448 35.8 448 80zM393.2 214.7c20.8-7.4 39.9-16.9 54.8-28.6V288c0 44.2-100.3 80-224 80S0 332.2 0 288V186.1c14.9 11.8 34 21.2 54.8 28.6C99.7 230.7 159.5 240 224 240s124.3-9.3 169.2-25.3zM448 368v48c0 44.2-100.3 80-224 80S0 460.2 0 416V368c0-17.5 13-32.9 31.5-41.2C86.2 344.3 152.6 352 224 352s137.8-7.7 192.5-25.2c18.5 8.3 31.5 23.7 31.5 41.2z' })
+                                )
+                            ),
+                            React.createElement('h3', { className: 'text-xl font-semibold mb-2' }, 'SQL 自动化编写助手'),
+                            React.createElement('p', null, '输入您的需求开始生成SQL。'),
+                            React.createElement('p', null, '您可以持续对话，对生成的SQL进行修改和完善。')
+                        )
+                    ) : (
+                        conversation.map((msg, index) =>
+                            msg.role === 'user' ? (
+                                React.createElement('div', {
+                                    key: index,
+                                    className: `flex justify-end group ${editingIndex === index ? '' : 'items-end gap-2'}`.trim()
+                                },
+                                editingIndex === index ?
+                                    React.createElement('div', { className: 'user-message p-3 w-full max-w-[75%]' },
+                                        React.createElement('textarea', {
+                                            value: editedContent,
+                                            onChange: e => setEditedContent(e.target.value),
+                                            className: 'w-full bg-white/20 rounded-md p-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50',
+                                            rows: 3
+                                        }),
+                                        React.createElement('div', { className: 'flex justify-end gap-2 mt-2' },
+                                            React.createElement('button', { onClick: onCancelEdit, className: 'text-xs px-3 py-1 rounded-lg font-semibold bg-gray-400 text-white hover:bg-gray-500 transition transform active:scale-95' }, '取消'),
+                                            React.createElement('button', { onClick: onSaveEdit, className: 'text-xs px-3 py-1 rounded-lg font-semibold bg-white text-[var(--accent-color)] hover:bg-gray-100 transition transform active:scale-95' }, '保存')
                                         )
+                                    ) :
+                                    [
+                                        React.createElement('button', { 
+                                            key: `edit-${index}`, 
+                                            onClick: () => startEditing(index, msg.content), 
+                                            disabled: isLoading, 
+                                            className: 'opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 hover:text-[var(--accent-color)] disabled:opacity-20 active:scale-90 mb-1 flex-shrink-0', 'aria-label': '编辑' 
+                                        },
+                                            React.createElement(EditIcon, null)
+                                        ),
+                                        React.createElement('div', { 
+                                            key: `msg-${index}`, 
+                                            className: 'user-message p-3 max-w-[75%] whitespace-pre-wrap break-words text-sm' 
+                                        }, msg.content)
+                                    ]
+                                )
+                            ) : (
+                                React.createElement('div', { key: index, className: 'flex justify-start' },
+                                    React.createElement('div', { className: `assistant-message p-3 w-full ${msg.isError ? 'border-l-4 border-[var(--danger-bg)]' : ''}` },
+                                        React.createElement('div', { className: 'flex justify-between items-center mb-2' },
+                                            React.createElement('span', { className: 'text-sm font-semibold text-[var(--accent-color)]' }, '助手')
+                                        ),
+                                        msg.isStreaming ?
+                                            React.createElement('pre', { className: 'p-3 overflow-x-auto text-sm mono whitespace-pre-wrap' }, 
+                                                React.createElement('code', null, 
+                                                    msg.content,
+                                                    React.createElement('span', { className: 'inline-block w-2 h-4 bg-[var(--accent-color)] animate-pulse ml-1 align-middle' })
+                                                )
+                                            )
+                                        :
+                                            React.createElement(AssistantMessageRenderer, { markdown: msg.content })
                                     )
                                 )
                             )
-                        ),
-                        isLoading && conversation[conversation.length - 1]?.isStreaming !== true && React.createElement('div', { className: 'flex items-center gap-3 p-4' },
-                            React.createElement('div', { className: 'small-loader' }),
-                            React.createElement('p', { className: 'text-gray-600 animate-pulse' }, '助手正在思考...')
                         )
-                    )
-                ),
-                React.createElement('div', { className: 'ios-card p-4 mt-4' },
-                    React.createElement('div', { className: 'flex items-end gap-3' },
-                        React.createElement('textarea', {
-                            id: 'user-query',
-                            className: 'input-textarea w-full p-3 text-base resize-none max-h-40 overflow-y-auto',
-                            placeholder: '继续输入以改进SQL，或开始新对话... (Shift+Enter 换行)',
-                            value: userQuery,
-                            onChange: (e) => {
-                                setUserQuery(e.target.value);
-                                e.target.style.height = 'auto';
-                                e.target.style.height = `${e.target.scrollHeight}px`;
-                            },
-                            onKeyDown: handleKeyDown,
-                            disabled: isLoading || editingIndex !== null,
-                            rows: 1
-                        }),
-                        isLoading
-                            ? React.createElement('button', { onClick: handleStop, className: 'ios-button danger p-3 flex items-center justify-center flex-shrink-0' }, React.createElement(StopIcon))
-                            : React.createElement('div', { className: 'flex items-center gap-2 flex-shrink-0' },
-                                React.createElement('button', {
-                                    onClick: handleRegenerateLastResponse,
-                                    disabled: editingIndex !== null || !conversation.some(msg => msg.role === 'assistant'),
-                                    className: 'ios-button ios-button-secondary p-3 flex items-center justify-center',
-                                    'aria-label': '重新生成'
-                                }, React.createElement(RegenerateIcon)),
-                                React.createElement('button', { onClick: handleSendMessage, disabled: !userQuery.trim() || editingIndex !== null, className: 'ios-button p-3 flex items-center justify-center' }, React.createElement(SendIcon))
-                            )
+                    ),
+                    isLoading && conversation[conversation.length - 1]?.isStreaming !== true && React.createElement('div', { className: 'flex items-center gap-3 p-4' },
+                        React.createElement('div', { className: 'small-loader' }),
+                        React.createElement('p', { className: 'text-gray-600 animate-pulse' }, '助手正在思考...')
                     )
                 )
             );
@@ -1057,6 +1141,7 @@
         const SettingsPanel = ({ isOpen, onClose, activeProfile, profiles, onSave, onSwitch, onCreate, onDelete, onRename, onExport, onClearAll, onShowToast }) => {
             const [currentSettings, setCurrentSettings] = useState(activeProfile.settings);
             const [newProfileName, setNewProfileName] = useState('');
+            const [isOptimizingField, setIsOptimizingField] = useState(null);
             const importFileRef = useRef(null);
             const [availableModels, setAvailableModels] = useState([]);
             const [isFetchingModels, setIsFetchingModels] = useState(false);
@@ -1086,6 +1171,38 @@
                 }
                 onCreate(newProfileName.trim(), DEFAULT_SETTINGS);
                 setNewProfileName('');
+            };
+            
+            const handleOptimizePrompt = async (key) => {
+                if (!currentSettings.apiUrl || !currentSettings.apiKey) {
+                    alert('请先在API配置中设置API链接和Key。');
+                    return;
+                }
+                const originalContent = currentSettings[key];
+                if (!originalContent.trim()) {
+                    alert('内容为空，无需优化。');
+                    return;
+                }
+                
+                setIsOptimizingField(key);
+                try {
+                    const prompt = `You are an expert YAML converter. Your task is to convert the following text into a clean, well-structured YAML format. **Strictly output only the YAML content itself, wrapped within <yaml_output> tags.** Do not include any explanations, introductions, or conversational text. The text to convert is:\n\n---\n\n${originalContent}`;
+                    
+                    const apiResponse = await generateSimpleText(currentSettings, prompt);
+                    const match = apiResponse.match(/<yaml_output>([\s\S]*)<\/yaml_output>/);
+                    const optimizedContent = match ? match[1].trim() : apiResponse.trim();
+                    
+                    if (optimizedContent) {
+                        setCurrentSettings(prev => ({ ...prev, [key]: optimizedContent }));
+                        onShowToast(`"${promptFields.find(f => f.key === key)?.label}" 已优化！`);
+                    } else {
+                        throw new Error("API did not return any parsable content.");
+                    }
+                } catch (error) {
+                    alert(`优化失败: ${error instanceof Error ? error.message : '未知错误'}`);
+                } finally {
+                    setIsOptimizingField(null);
+                }
             };
 
             const handleImport = async (e) => {
@@ -1127,7 +1244,7 @@
             };
 
             return (
-                React.createElement('div', { className: `slide-panel fixed top-0 w-full max-w-md h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col ${isOpen ? 'right-0' : '-right-full'}`},
+                React.createElement('div', { className: `slide-panel fixed top-0 right-0 w-full max-w-md h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`},
                     React.createElement('header', { className: 'ios-header p-4 flex-shrink-0' },
                         React.createElement('div', { className: 'flex justify-between items-center' },
                             React.createElement('h2', { className: 'text-xl font-bold' }, '设置'),
@@ -1155,38 +1272,52 @@
                                     )
                                 )
                             ),
+                            React.createElement('div', { className: 'ios-card p-5' },
+                                React.createElement('h3', { className: 'text-lg font-semibold mb-3' }, 'API 配置'),
+                                React.createElement('div', { className: 'space-y-3' },
+                                    React.createElement('div', null,
+                                        React.createElement('label', { htmlFor: 'apiUrl', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'API 链接'),
+                                        React.createElement('input', { type: 'url', id: 'apiUrl', name: 'apiUrl', value: currentSettings.apiUrl, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base', placeholder: 'https://generativelanguage.googleapis.com/v1beta' })
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('label', { htmlFor: 'apiKey', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'API Key'),
+                                        React.createElement('input', { type: 'password', id: 'apiKey', name: 'apiKey', value: currentSettings.apiKey, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base', placeholder: 'Enter your API Key' })
+                                    ),
+                                    React.createElement('button', { onClick: handleFetchModels, disabled: isFetchingModels || !currentSettings.apiUrl || !currentSettings.apiKey, className: 'ios-button ios-button-secondary w-full flex items-center justify-center gap-2' },
+                                        React.createElement('span', null, isFetchingModels ? '获取中...' : '获取可用模型'),
+                                        isFetchingModels && React.createElement('div', { className: 'small-loader' })
+                                    ),
+                                    availableModels.length > 0 && (
+                                        React.createElement('div', null,
+                                            React.createElement('label', { htmlFor: 'apiModel', className: 'block text-sm font-medium text-gray-700 mb-1' }, '选择模型'),
+                                            React.createElement('select', { id: 'apiModel', name: 'apiModel', value: currentSettings.apiModel, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' },
+                                                React.createElement('option', { value: '' }, '请选择模型'),
+                                                availableModels.map(m => React.createElement('option', { key: m, value: m }, m))
+                                            )
+                                        )
+                                    )
+                                )
+                            ),
                             ...promptFields.map(({key, label, description, placeholder}) => (
                                 React.createElement('div', { key: key, className: 'ios-card p-5' },
                                     React.createElement('label', { htmlFor: key, className: 'block text-lg font-semibold mb-3' }, label),
                                     React.createElement('p', { className: 'text-sm text-gray-600 mb-2' }, description),
                                     React.createElement('textarea', { id: key, name: key, value: currentSettings[key], onChange: handleChange, className: 'w-full border-2 border-[var(--border-color)] rounded-lg p-3 text-base resize-vertical min-h-[120px] bg-[var(--card-bg)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[var(--accent-color)]/20', placeholder: placeholder }),
                                     React.createElement('input', { type: 'file', id: `${key}-upload`, className: 'hidden', accept: '.txt,.md,.yaml,.yml,.sql', onChange: (e) => handleFileChange(e, key) }),
-                                    React.createElement('button', { onClick: () => document.getElementById(`${key}-upload`)?.click(), className: 'ios-button ios-button-secondary mt-3 w-full' }, '上传文件')
-                                )
-                            )),
-                            React.createElement('hr', { className: 'border-[var(--border-color)]' }),
-                            React.createElement('h3', { className: 'text-lg font-semibold' }, 'API 配置'),
-                            React.createElement('div', null,
-                                React.createElement('label', { htmlFor: 'apiUrl', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'API 链接'),
-                                React.createElement('input', { type: 'url', id: 'apiUrl', name: 'apiUrl', value: currentSettings.apiUrl, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base', placeholder: 'https://generativelanguage.googleapis.com/v1beta' })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { htmlFor: 'apiKey', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'API Key'),
-                                React.createElement('input', { type: 'password', id: 'apiKey', name: 'apiKey', value: currentSettings.apiKey, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base', placeholder: 'Enter your API Key' })
-                            ),
-                            React.createElement('button', { onClick: handleFetchModels, disabled: isFetchingModels || !currentSettings.apiUrl || !currentSettings.apiKey, className: 'ios-button ios-button-secondary w-full mt-3 flex items-center justify-center gap-2' },
-                                React.createElement('span', null, isFetchingModels ? '获取中...' : '获取可用模型'),
-                                isFetchingModels && React.createElement('div', { className: 'small-loader' })
-                            ),
-                            availableModels.length > 0 && (
-                                React.createElement('div', null,
-                                    React.createElement('label', { htmlFor: 'apiModel', className: 'block text-sm font-medium text-gray-700 mb-1' }, '选择模型'),
-                                    React.createElement('select', { id: 'apiModel', name: 'apiModel', value: currentSettings.apiModel, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' },
-                                        React.createElement('option', { value: '' }, '请选择模型'),
-                                        availableModels.map(m => React.createElement('option', { key: m, value: m }, m))
+                                    React.createElement('div', { className: 'mt-3 grid grid-cols-2 gap-2' },
+                                        React.createElement('button', { onClick: () => document.getElementById(`${key}-upload`)?.click(), className: 'ios-button ios-button-secondary w-full' }, '上传文件'),
+                                        React.createElement('button', {
+                                            onClick: () => handleOptimizePrompt(key),
+                                            className: 'ios-button ios-button-secondary w-full flex items-center justify-center gap-2',
+                                            disabled: isOptimizingField !== null,
+                                        },
+                                            isOptimizingField === key
+                                                ? React.createElement(React.Fragment, null, React.createElement('div', { className: 'small-loader' }), React.createElement('span', null, '优化中...'))
+                                                : React.createElement(React.Fragment, null, React.createElement('i', { className: 'fa-solid fa-wand-magic-sparkles' }), React.createElement('span', null, '智能优化'))
+                                        )
                                     )
                                 )
-                            )
+                            ))
                         )
                     ),
                     React.createElement('div', { className: 'p-4 border-t border-[var(--border-color)] flex-shrink-0 bg-[var(--card-bg)]' },
@@ -1221,8 +1352,8 @@
             };
             
             const copySql = (conversation) => {
-                const finalSql = [...conversation].reverse().find(m => m.role === 'assistant' && !m.isError)?.sql;
-                if (finalSql) {
+                const finalSql = [...conversation].reverse().find(m => m.role === 'assistant' && !m.isError)?.content?.match(/```(?:sql)?\n([\s\S]+?)```/g)?.pop()?.replace(/```(?:sql)?\n|\n```/g, '') || '无有效 SQL';
+                if (finalSql && finalSql !== '无有效 SQL') {
                     navigator.clipboard.writeText(finalSql).then(() => alert('最终的 SQL 已复制到剪贴板')).catch(() => alert('复制失败'));
                 } else {
                     alert('此对话中没有找到有效的 SQL。');
@@ -1268,7 +1399,7 @@
             };
 
             return (
-                React.createElement('aside', { className: `slide-panel fixed top-0 w-full max-w-lg h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col ${isOpen ? 'left-0' : '-left-full'}` },
+                React.createElement('aside', { className: `slide-panel fixed top-0 left-0 w-full max-w-lg h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col transform ${isOpen ? 'translate-x-0' : '-translate-x-full'}` },
                     React.createElement('header', { className: 'ios-header p-4 flex-shrink-0' },
                         React.createElement('div', { className: 'flex justify-between items-center' },
                             React.createElement('h2', { className: 'text-xl font-bold' }, '历史记录 (最近10条)'),
@@ -1281,7 +1412,8 @@
                         ) : (
                             history.map((h, idx) => {
                                 const initialRequest = h.conversation.find(m => m.role === 'user')?.content || '无初始请求';
-                                const finalSql = [...h.conversation].reverse().find(m => m.role === 'assistant' && !m.isError)?.sql || '无有效 SQL';
+                                const finalSql = [...h.conversation].reverse().find(m => m.role === 'assistant' && !m.isError)?.content?.match(/```(?:sql)?\n([\s\S]+?)```/g)?.pop()?.replace(/```(?:sql)?\n|\n```/g, '') || '无有效 SQL';
+
                                 return React.createElement('div', { key: h.time, className: 'ios-card p-4 mb-3' },
                                     React.createElement('div', { className: 'flex items-start justify-between gap-3' },
                                         React.createElement('div', { className: 'flex-1' },
@@ -1291,12 +1423,15 @@
                                         React.createElement('button', { onClick: () => loadConversation(h.conversation, h.time), className: 'ios-button text-sm px-4 py-2 whitespace-nowrap' }, '加载')
                                     ),
                                     React.createElement('details', { className: 'mt-2' },
-                                        React.createElement('summary', { className: 'text-sm text-gray-600 cursor-pointer' }, '查看最终 SQL'),
-                                        React.createElement('pre', { className: 'mt-2 p-3 code-block text-white rounded-lg overflow-auto mono text-xs' }, finalSql)
+                                        React.createElement('summary', { className: 'text-sm font-medium flex items-center' }, 
+                                            React.createElement('span', { className: 'details-arrow' }),
+                                            React.createElement('span', { className: 'summary-text' }, '查看最终 SQL')
+                                        ),
+                                        React.createElement('pre', { className: 'mt-2 p-3 bg-gray-800 text-white rounded-lg overflow-auto mono text-xs' }, finalSql)
                                     ),
-                                    React.createElement('div', { className: 'mt-3 flex gap-2' },
-                                        React.createElement('button', { onClick: () => copySql(h.conversation), className: 'ios-button ios-button-secondary text-xs px-2 py-1' }, '复制SQL'),
-                                        React.createElement('button', { onClick: () => deleteItem(h.time), className: 'ios-button danger text-xs px-2 py-1' }, '删除')
+                                    React.createElement('div', { className: 'mt-3 flex gap-2 items-stretch' },
+                                        React.createElement('button', { onClick: () => copySql(h.conversation), className: 'ios-button ios-button-secondary text-sm px-4 py-2' }, '复制SQL'),
+                                        React.createElement('button', { onClick: () => deleteItem(h.time), className: 'ios-button danger text-sm px-4 py-2' }, '删除对话')
                                     )
                                 );
                             })
@@ -1316,6 +1451,55 @@
             );
         };
         
+        // --- From components/ConsolePanel.tsx ---
+        const ConsolePanel = ({ isOpen, onClose, logs, onClearLogs }) => {
+            const logsContainerRef = useRef(null);
+            
+            useEffect(() => {
+                if (isOpen && logsContainerRef.current) {
+                    logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+                }
+            }, [logs, isOpen]);
+
+            const levelColor = {
+                log: 'text-gray-500',
+                warn: 'text-yellow-500',
+                error: 'text-red-500',
+                info: 'text-blue-500',
+            };
+
+            return React.createElement('aside', { className: `slide-panel fixed top-0 left-0 w-full max-w-lg h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col transform ${isOpen ? 'translate-x-0' : '-translate-x-full'}` },
+                React.createElement('header', { className: 'ios-header p-4 flex-shrink-0' },
+                    React.createElement('div', { className: 'flex justify-between items-center' },
+                        React.createElement('h2', { className: 'text-xl font-bold' }, '控制台'),
+                        React.createElement('button', { onClick: onClose, className: 'icon-button p-2 text-2xl font-bold hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '关闭控制台' }, '×')
+                    )
+                ),
+                React.createElement('div', { ref: logsContainerRef, className: 'p-5 overflow-y-auto flex-grow' },
+                    logs.length === 0 ? (
+                        React.createElement('p', { className: 'text-sm text-gray-500' }, '暂无控制台信息。')
+                    ) : (
+                        React.createElement('div', { className: 'space-y-2' },
+                            logs.map((log, index) =>
+                                React.createElement('div', { key: index, className: 'p-2 bg-[var(--card-bg)] rounded-lg border border-[var(--border-color)]' },
+                                    React.createElement('div', { className: 'flex justify-between items-center text-xs text-gray-400 mb-1' },
+                                        React.createElement('span', { className: `font-bold uppercase ${levelColor[log.level] || 'text-gray-500'}` }, log.level),
+                                        React.createElement('span', null, new Date(log.time).toLocaleTimeString())
+                                    ),
+                                    React.createElement('pre', { className: 'whitespace-pre-wrap break-words text-sm mono' }, log.message)
+                                )
+                            )
+                        )
+                    )
+                ),
+                React.createElement('div', { className: 'p-4 border-t border-[var(--border-color)] flex-shrink-0 bg-[var(--card-bg)]' },
+                    React.createElement('div', { className: 'mx-auto' },
+                        React.createElement('button', { onClick: onClearLogs, className: 'ios-button danger w-full', disabled: logs.length === 0 }, '清空控制台')
+                    )
+                )
+            );
+        };
+        
         // --- From components/TutorialPanel.tsx ---
         const TutorialPanel = ({ isOpen, onClose }) => {
             const Section = ({ title, children }) => React.createElement('div', { className: 'ios-card p-5' },
@@ -1328,7 +1512,7 @@
                 React.createElement('p', { className: 'mt-1' }, children)
             );
 
-            return React.createElement('div', { className: `slide-panel fixed top-0 w-full max-w-md h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col ${isOpen ? 'right-0' : '-right-full'}`},
+            return React.createElement('div', { className: `slide-panel fixed top-0 right-0 w-full max-w-md h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`},
                 React.createElement('header', { className: 'ios-header p-4 flex-shrink-0' },
                     React.createElement('div', { className: 'flex justify-between items-center' },
                         React.createElement('h2', { className: 'text-xl font-bold' }, '教程与提示'),
@@ -1339,20 +1523,24 @@
                     React.createElement(Section, { title: '基础功能' },
                         React.createElement('p', null, '欢迎使用 SQL 自动化编写助手！本工具旨在帮助您通过自然语言快速生成和优化 SQL 查询。'),
                         React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
-                            React.createElement('li', null, React.createElement('strong', null, '对话式生成: '), '在下方的输入框中输入您的数据需求，点击发送即可生成 SQL。'),
-                            React.createElement('li', null, React.createElement('strong', null, '持续优化: '), '您可以继续输入指令，对已生成的 SQL 进行修改，例如 "添加 xx 条件" 或 "按 xx 排序"。'),
-                            React.createElement('li', null, React.createElement('strong', null, '编辑与重生成: '), '将鼠标悬停在您的消息上可进行编辑。您也可以点击 "重新生成" 按钮让 AI 重新回答最后一个问题。'),
-                            React.createElement('li', null, React.createElement('strong', null, '新对话: '), '点击 "开启新对话" 会将当前对话存入历史记录，并开始一个全新的会话。')
+                            React.createElement('li', null, React.createElement('strong', null, '对话式生成: '), '在下方的输入框中输入数据需求，点击发送即可生成 SQL。'),
+                            React.createElement('li', null, React.createElement('strong', null, '持续优化: '), '可以继续输入指令，对已生成的 SQL 进行修改，例如 "添加 xx 条件" 或 "按 xx 排序"。'),
+                            React.createElement('li', null, React.createElement('strong', null, '编辑与重生成: '), '将鼠标悬停在消息上可点击铅笔图标进行编辑。也可以点击 "重新生成" 按钮让 AI 重新回答最后一个问题。'),
+                            React.createElement('li', null, React.createElement('strong', null, '复制代码块: '), 'AI 回复的代码块右上角会出现复制按钮，方便一键复制代码。'),
+                            React.createElement('li', null, React.createElement('strong', null, '新对话: '), '点击标题栏左侧的 "+" 图标会将当前对话存入历史记录，并开始一个全新的会话。'),
+                            React.createElement('li', null, React.createElement('strong', null, '历史记录: '), '点击标题栏左侧的时钟图标，可以查看、加载、或删除最近的10次对话。'),
+                            React.createElement('li', null, React.createElement('strong', null, '开发者控制台: '), '点击标题栏左侧的终端图标，可以查看应用的详细日志，便于排查API调用等问题。')
                         )
                     ),
                     React.createElement(Section, { title: '配置管理 (设置面板)' },
                          React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
-                            React.createElement('li', null, React.createElement('strong', null, '多套配置: '), '您可以创建多套配置方案，以适应不同的数据库或项目需求。'),
-                            React.createElement('li', null, React.createElement('strong', null, '自定义 Prompt: '), '通过修改引导提示、数据库结构等信息，您可以定制 AI 的行为，使其生成更符合您需求的 SQL。'),
-                            React.createElement('li', null, React.createElement('strong', null, 'API 设置: '), '在这里配置您的 API 服务地址和 Key。点击 "获取可用模型" 将自动拉取并填充模型列表。')
+                            React.createElement('li', null, React.createElement('strong', null, '多套配置: '), '点击标题栏右侧的齿轮图标，可以创建多套配置方案，以适应不同的数据库或项目需求。'),
+                            React.createElement('li', null, React.createElement('strong', null, '自定义 Prompt: '), '通过修改引导提示、数据库结构等信息，可以定制 AI 的行为，使其生成更符合需求的 SQL。'),
+                            React.createElement('li', null, React.createElement('strong', null, '智能优化: '), '点击 Prompt 输入框下方的 "智能优化" 按钮，可利用 AI 自动将输入或上传的文本内容（如数据库结构、术语定义等）优化为更规整、更易于 AI 理解的 YAML 格式。'),
+                            React.createElement('li', null, React.createElement('strong', null, 'API 设置: '), '在这里配置 API 服务地址和 Key。点击 "获取可用模型" 按钮将自动拉取并填充模型列表。')
                         ),
                         React.createElement(Tip, { title: '高级提示：使用 YAML 格式' },
-                            '在 "数据库表结构" 或 "行业术语定义" 等字段中，使用清晰的 YAML 格式可以让 AI 更准确地理解和记忆您的上下文信息，从而提高生成质量。'
+                            '在 "数据库表结构" 或 "行业术语定义" 等信息中，使用清晰的 YAML 格式可以让 AI 更准确地理解和记忆上下文信息，从而提高生成质量。智能优化功能可以快速完成转换。'
                         )
                     ),
                     React.createElement(Section, { title: 'API URL 支持格式' },
@@ -1371,6 +1559,8 @@
             const [isSettingsOpen, setSettingsOpen] = useState(false);
             const [isHistoryOpen, setHistoryOpen] = useState(false);
             const [isTutorialOpen, setTutorialOpen] = useState(false);
+            const [isConsoleOpen, setConsoleOpen] = useState(false);
+            const [consoleLogs, setConsoleLogs] = useState([]);
             const [theme, setTheme] = useLocalStorage(LOCAL_STORAGE_THEME_KEY, 'light');
             const [toastMessage, setToastMessage] = useState(null);
             
@@ -1380,6 +1570,45 @@
             const [userQuery, setUserQuery] = useState('');
             const [conversation, _setConversation] = useState([]);
             const [activeHistoryId, setActiveHistoryId] = useState(null);
+
+            const [isLoading, setIsLoading] = useState(false);
+            const [editingIndex, setEditingIndex] = useState(null);
+            const [editedContent, setEditedContent] = useState('');
+            const abortControllerRef = useRef(null);
+
+            useEffect(() => {
+                const originalConsole = { ...window.console };
+                const formatMessage = (args) => args.map(arg => {
+                    try {
+                        if (arg instanceof Error) {
+                            return `Error: ${arg.message}\n${arg.stack}`;
+                        }
+                        return typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg);
+                    } catch (e) {
+                        return '[Unserializable Object]';
+                    }
+                }).join(' ');
+
+                const overrideConsole = (level) => {
+                    window.console[level] = (...args) => {
+                        originalConsole[level](...args);
+                        setConsoleLogs(prevLogs => [
+                            ...prevLogs,
+                            {
+                                level,
+                                message: formatMessage(args),
+                                time: new Date().toISOString()
+                            }
+                        ].slice(-100));
+                    };
+                };
+
+                ['log', 'warn', 'error', 'info'].forEach(overrideConsole);
+
+                return () => {
+                    window.console = originalConsole; // Cleanup
+                };
+            }, []);
 
             const activeProfile = useMemo(() => {
                 return profiles.find(p => p.id === activeProfileId) || profiles[0] || DEFAULT_PROFILE;
@@ -1440,40 +1669,191 @@
                 setSettingsOpen(false);
                 setHistoryOpen(false);
                 setTutorialOpen(false);
+                setConsoleOpen(false);
             }, []);
 
             const handleToggleSettings = useCallback((open) => {
                 const nextState = open ?? !isSettingsOpen;
                 setSettingsOpen(nextState);
-                if (nextState) { setHistoryOpen(false); setTutorialOpen(false); }
+                if (nextState) { setHistoryOpen(false); setTutorialOpen(false); setConsoleOpen(false); }
             }, [isSettingsOpen]);
 
             const handleToggleHistory = useCallback((open) => {
                 const nextState = open ?? !isHistoryOpen;
                 setHistoryOpen(nextState);
-                if (nextState) { setSettingsOpen(false); setTutorialOpen(false); }
+                if (nextState) { setSettingsOpen(false); setTutorialOpen(false); setConsoleOpen(false); }
             }, [isHistoryOpen]);
+
+            const handleToggleConsole = useCallback((open) => {
+                const nextState = open ?? !isConsoleOpen;
+                setConsoleOpen(nextState);
+                if (nextState) { setSettingsOpen(false); setTutorialOpen(false); setHistoryOpen(false); }
+            }, [isConsoleOpen]);
             
             const handleToggleTutorial = useCallback((open) => {
                 const nextState = open ?? !isTutorialOpen;
                 setTutorialOpen(nextState);
-                if (nextState) { setSettingsOpen(false); setHistoryOpen(false); }
+                if (nextState) { setSettingsOpen(false); setHistoryOpen(false); setConsoleOpen(false); }
             }, [isTutorialOpen]);
             
             const handleToggleTheme = useCallback(() => {
                 setTheme(prev => prev === 'light' ? 'dark' : 'light');
             }, [setTheme]);
 
+            const handleStop = () => {
+                if (abortControllerRef.current) {
+                    abortControllerRef.current.abort();
+                }
+            };
+
+            const handleCancelEdit = () => {
+                setEditingIndex(null);
+                setEditedContent('');
+            };
+
             const handleNewChat = useCallback(() => {
                 _setConversation([]);
                 setUserQuery('');
                 setActiveHistoryId(null);
+                handleStop();
+                handleCancelEdit();
             }, []);
 
             const handleLoadConversationFromHistory = useCallback((conversationToLoad, historyId) => {
                 _setConversation(conversationToLoad);
                 setActiveHistoryId(historyId);
             }, []);
+
+            const runGeneration = useCallback(async (chatHistoryForApi, isRegeneration = false, regenerationIndex = -1) => {
+                const activeSettings = activeProfile.settings;
+                if (!activeSettings.apiUrl || !activeSettings.apiKey) {
+                    alert('请先在设置中配置API！');
+                    handleToggleSettings(true);
+                    return;
+                }
+                
+                setIsLoading(true);
+                abortControllerRef.current = new AbortController();
+
+                const baseUpdater = (prev) => {
+                    const conversationSlice = isRegeneration ? prev.slice(0, regenerationIndex + 1) : prev;
+                    return [...conversationSlice, { role: 'assistant', content: '', isStreaming: true }];
+                };
+                isRegeneration ? _setConversation(baseUpdater) : setConversation(baseUpdater);
+                
+                const onChunk = (chunk) => {
+                    setConversation(prev => {
+                        const lastMessage = prev[prev.length - 1];
+                        if (lastMessage && lastMessage.role === 'assistant') {
+                            const updatedLastMessage = { ...lastMessage, content: lastMessage.content + chunk };
+                            return [...prev.slice(0, -1), updatedLastMessage];
+                        }
+                        return prev;
+                    });
+                };
+                
+                const onComplete = () => {
+                    setConversation(prev => {
+                        const lastMessage = prev[prev.length - 1];
+                        if (lastMessage && lastMessage.role === 'assistant') {
+                            return [...prev.slice(0, -1), { ...lastMessage, isStreaming: false }];
+                        }
+                        return prev;
+                    });
+                    setIsLoading(false);
+                    abortControllerRef.current = null;
+                };
+
+                const onError = (error) => {
+                    setConversation(prev => {
+                        const lastMessage = prev[prev.length - 1];
+                        const isAbort = error instanceof Error && error.name === 'AbortError';
+                        const content = isAbort ? '-- 生成已手动停止 --' : `-- 生成 SQL 时出错 --\n${error.message}`;
+                
+                        if (lastMessage && lastMessage.role === 'assistant') {
+                             return [...prev.slice(0, -1), { ...lastMessage, content: (lastMessage.content || '') + `\n\n${content}`, isError: true, isStreaming: false }];
+                        }
+                        return [...prev, { role: 'assistant', content, isError: true, isStreaming: false }];
+                    });
+                    setIsLoading(false);
+                    abortControllerRef.current = null;
+                };
+
+                await generateSqlStream(
+                    chatHistoryForApi,
+                    activeSettings,
+                    abortControllerRef.current.signal,
+                    onChunk,
+                    onComplete,
+                    onError
+                );
+            }, [activeProfile, setConversation]);
+
+            const handleSendMessage = useCallback(async () => {
+                const trimmedQuery = userQuery.trim();
+                if (!trimmedQuery) {
+                    alert('请输入您的需求！');
+                    return;
+                }
+                const userMessage = { role: 'user', content: trimmedQuery };
+                const newConversation = [...conversation, userMessage];
+                setConversation(newConversation);
+                setUserQuery('');
+                
+                const textarea = document.getElementById('user-query');
+                if (textarea) {
+                    textarea.style.height = '44px'; // Reset to initial height (h-11)
+                }
+                
+                await runGeneration(newConversation, false);
+            }, [userQuery, conversation, setConversation, setUserQuery, runGeneration]);
+
+            const handleSaveEdit = useCallback(() => {
+                if (editingIndex === null) return;
+                const trimmedContent = editedContent.trim();
+                if (!trimmedContent) {
+                    alert('内容不能为空！');
+                    return;
+                }
+                
+                const updatedConversation = [...conversation];
+                updatedConversation[editingIndex] = { ...updatedConversation[editingIndex], content: trimmedContent };
+                
+                setConversation(updatedConversation);
+                setEditingIndex(null);
+                setEditedContent('');
+            }, [editingIndex, editedContent, conversation, setConversation]);
+            
+            const handleRegenerateLastResponse = useCallback(async () => {
+                let lastUserMessageIndex = -1;
+                for (let i = conversation.length - 1; i >= 0; i--) {
+                    if (conversation[i].role === 'user') {
+                        lastUserMessageIndex = i;
+                        break;
+                    }
+                }
+                if (lastUserMessageIndex === -1) return;
+                
+                const textarea = document.getElementById('user-query');
+                if (textarea) {
+                    textarea.style.height = '44px'; // Reset to initial height (h-11)
+                }
+
+                const chatHistoryForApi = conversation.slice(0, lastUserMessageIndex + 1);
+                await runGeneration(chatHistoryForApi, true, lastUserMessageIndex);
+            }, [conversation, runGeneration]);
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
+                    e.preventDefault();
+                    handleSendMessage();
+                }
+            };
+            
+            const handleStartEdit = (index, content) => {
+                setEditingIndex(index);
+                setEditedContent(content);
+            };
 
             const handleSaveProfileSettings = (updatedSettings) => {
                 const updatedProfiles = profiles.map(p =>
@@ -1530,7 +1910,7 @@
             
             const handleExportProfile = () => {
                 if (!activeProfile) return;
-                downloadAsJson(activeProfile.settings, `${activeProfile.name.replace(/\s/g, '_')}_settings.json`);
+                downloadAsJson(activeProfile.settings, `${activeProfile.name.replace(/\s/g, '_')}.json`);
             };
 
             const handleClearAllData = () => {
@@ -1540,6 +1920,7 @@
                     setHistory([]);
                     _setConversation([]);
                     setActiveHistoryId(null);
+                    setConsoleLogs([]);
                     alert('所有数据已清除！');
                 }
             };
@@ -1553,29 +1934,65 @@
                 }
             }, [profiles, activeProfileId, setProfiles, setActiveProfileId]);
 
-            const isPanelOpen = isSettingsOpen || isHistoryOpen || isTutorialOpen;
+            const isPanelOpen = isSettingsOpen || isHistoryOpen || isTutorialOpen || isConsoleOpen;
 
             return (
-                React.createElement('div', { className: 'min-h-screen relative' },
+                React.createElement('div', { className: 'h-screen flex flex-col relative' },
                     toastMessage && React.createElement(Toast, { message: toastMessage }),
                     React.createElement(Header, { 
                         onHistoryClick: () => handleToggleHistory(), 
                         onSettingsClick: () => handleToggleSettings(),
                         onTutorialClick: () => handleToggleTutorial(),
+                        onConsoleClick: () => handleToggleConsole(),
+                        onNewChat: handleNewChat,
                         onToggleTheme: handleToggleTheme,
-                        theme: theme
+                        theme: theme,
+                        activeProfileName: activeProfile.name
                     }),
-                    React.createElement('main', { className: 'p-4 lg:max-w-4xl mx-auto flex flex-col gap-4 relative z-10' },
+                    React.createElement('main', { className: 'lg:max-w-4xl mx-auto w-full flex flex-col relative z-10 flex-grow p-4 pb-0 min-h-0' },
                         React.createElement(MainContent, {
-                            userQuery,
-                            setUserQuery,
-                            conversation,
-                            setConversation,
-                            activeSettings: activeProfile.settings,
-                            activeProfileName: activeProfile.name,
-                            onNewChat: handleNewChat,
-                            onSettingsClick: () => handleToggleSettings(true)
+                            conversation: conversation,
+                            isLoading: isLoading,
+                            editingIndex: editingIndex,
+                            editedContent: editedContent,
+                            setEditedContent: setEditedContent,
+                            onSaveEdit: handleSaveEdit,
+                            onCancelEdit: handleCancelEdit,
+                            onStartEdit: handleStartEdit
                         })
+                    ),
+                    React.createElement('div', { className: 'flex-shrink-0 bg-transparent z-10' },
+                        React.createElement('div', { className: 'p-4 lg:max-w-4xl mx-auto w-full' },
+                            React.createElement('div', { className: 'ios-card p-4' },
+                                React.createElement('div', { className: 'flex items-end gap-3' },
+                                    React.createElement('textarea', {
+                                        id: 'user-query',
+                                        className: 'input-textarea w-full p-3 text-base resize-none max-h-40 h-11',
+                                        placeholder: '继续输入以改进SQL，或开始新对话... (Shift+Enter 换行)',
+                                        rows: 1,
+                                        value: userQuery,
+                                        onChange: (e) => {
+                                            setUserQuery(e.target.value);
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = `${e.target.scrollHeight}px`;
+                                        },
+                                        onKeyDown: handleKeyDown,
+                                        disabled: isLoading || editingIndex !== null
+                                    }),
+                                    isLoading
+                                        ? React.createElement('button', { onClick: handleStop, className: 'ios-button danger p-3 flex-shrink-0 h-11' }, React.createElement(StopIcon))
+                                        : React.createElement('div', { className: 'flex items-center gap-2 flex-shrink-0' },
+                                            React.createElement('button', {
+                                                onClick: handleRegenerateLastResponse,
+                                                disabled: editingIndex !== null || !conversation.some(msg => msg.role === 'assistant'),
+                                                className: 'ios-button ios-button-secondary p-3 h-11',
+                                                'aria-label': '重新生成'
+                                            }, React.createElement(RegenerateIcon)),
+                                            React.createElement('button', { onClick: handleSendMessage, disabled: !userQuery.trim() || editingIndex !== null, className: 'ios-button p-3 h-11' }, React.createElement(SendIcon))
+                                        )
+                                )
+                            )
+                        )
                     ),
                     React.createElement(SettingsPanel, {
                         isOpen: isSettingsOpen,
@@ -1597,6 +2014,12 @@
                         history: history,
                         setHistory: setHistory,
                         onLoadConversation: handleLoadConversationFromHistory
+                    }),
+                    React.createElement(ConsolePanel, {
+                        isOpen: isConsoleOpen,
+                        onClose: () => handleToggleConsole(false),
+                        logs: consoleLogs,
+                        onClearLogs: () => setConsoleLogs([])
                     }),
                     React.createElement(TutorialPanel, {
                         isOpen: isTutorialOpen,
