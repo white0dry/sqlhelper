@@ -1673,10 +1673,10 @@
                                         ),
                                         React.createElement(CodeBlockWithCopy, { code: finalSql })
                                     ),
-                                    React.createElement('div', { className: 'mt-3 flex gap-2 items-stretch' },
-                                        React.createElement('button', { onClick: () => loadConversation(h.conversation, h.time), className: 'ios-button ios-button-secondary text-sm px-4 py-2' }, '加载对话'),
-                                        React.createElement('button', { onClick: () => deleteItem(h.time), className: 'ios-button danger text-sm px-4 py-2' }, '删除对话')
-                                    )
+                                        React.createElement('div', { className: 'mt-3 flex gap-2 items-stretch' },
+                                            React.createElement('button', { onClick: () => loadConversation(h.conversation, h.time), className: 'ios-button text-sm px-4 py-2 flex-1' }, '加载对话'),
+                                            React.createElement('button', { onClick: () => deleteItem(h.time), className: 'ios-button danger text-sm px-4 py-2 flex-1' }, '删除对话')
+                                        )
                                 );
                             })
                         )
