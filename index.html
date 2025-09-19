@@ -705,6 +705,7 @@
         const LOCAL_STORAGE_HISTORY_KEY = 'sql_assistant_history_v2';
         const LOCAL_STORAGE_THEME_KEY = 'sql_assistant_theme_v1';
         const LOCAL_STORAGE_ACTIVE_CONVERSATION_KEY = 'sql_assistant_active_conversation_v2';
+        const LOCAL_STORAGE_ACTIVE_HISTORY_ID_KEY = 'sql_assistant_active_history_id_v2';
 
         const DEFAULT_SETTINGS = {
             apiUrl: 'https://generativelanguage.googleapis.com/v1beta',
@@ -2036,7 +2037,7 @@
             const [history, setHistory] = useLocalStorage(LOCAL_STORAGE_HISTORY_KEY, []);
             const [userQuery, setUserQuery] = useState('');
             const [conversation, _setConversation] = useLocalStorage(LOCAL_STORAGE_ACTIVE_CONVERSATION_KEY, []);
-            const [activeHistoryId, setActiveHistoryId] = useState(null);
+            const [activeHistoryId, setActiveHistoryId] = useLocalStorage(LOCAL_STORAGE_ACTIVE_HISTORY_ID_KEY, null);
 
             const [isLoading, setIsLoading] = useState(false);
             const [editingIndex, setEditingIndex] = useState(null);
@@ -2130,7 +2131,7 @@
                     }
                     return currentId;
                 });
-            }, [setHistory, activeProfile.settings.maxHistory]);
+            }, [setHistory, activeProfile.settings.maxHistory, setActiveHistoryId]);
 
             useEffect(() => {
                 saveConversationToHistory(conversation);
@@ -2201,12 +2202,12 @@
                 setActiveHistoryId(null);
                 handleStop();
                 handleCancelEdit();
-            }, [_setConversation]);
+            }, [_setConversation, setActiveHistoryId]);
 
             const handleLoadConversationFromHistory = useCallback((conversationToLoad, historyId) => {
                 _setConversation(conversationToLoad);
                 setActiveHistoryId(historyId);
-            }, [_setConversation]);
+            }, [_setConversation, setActiveHistoryId]);
 
             const runGeneration = useCallback(async (chatHistoryForApi, isRegeneration = false, regenerationIndex = -1) => {
                 try {
