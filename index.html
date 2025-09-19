@@ -1433,7 +1433,7 @@
             { key: 'terminology', label: '4. 行业术语定义 (Terminology)', description: 'AI将根据这些定义理解特定的业务术语', placeholder: '输入行业术语及其定义...\n例如：\n术语:\n  KPI: 关键绩效指标' },
         ];
 
-        const SettingsPanel = ({ isOpen, onClose, activeProfile, profiles, onSave, onSwitch, onCreate, onDelete, onRename, onExport, onShowToast }) => {
+        const SettingsPanel = ({ isOpen, onClose, activeProfile, profiles, onSave, onSwitch, onCreate, onDelete, onRename, onExport, onExportAll, onShowToast }) => {
             const [currentSettings, setCurrentSettings] = useState(activeProfile.settings);
             const [newProfileName, setNewProfileName] = useState('');
             const [isOptimizingField, setIsOptimizingField] = useState(null);
@@ -1441,6 +1441,7 @@
             const [availableModels, setAvailableModels] = useState([]);
             const [isFetchingModels, setIsFetchingModels] = useState(false);
             const [fullscreenPrompt, setFullscreenPrompt] = useState(null);
+            const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
             useEffect(() => {
                 setCurrentSettings(activeProfile.settings);
@@ -1448,8 +1449,20 @@
             }, [activeProfile]);
 
             const handleChange = (e) => {
-                const { name, value, type } = e.target;
-                setCurrentSettings(prev => ({ ...prev, [name]: type === 'number' ? parseInt(value, 10) : value }));
+                const { name, value } = e.target;
+                setCurrentSettings(prev => ({ ...prev, [name]: value }));
+            };
+
+            const handleSave = () => {
+                const { maxHistory, ...restSettings } = currentSettings;
+                const numMaxHistory = parseInt(maxHistory, 10);
+
+                if (String(maxHistory).trim() === '' || isNaN(numMaxHistory) || numMaxHistory < 1 || numMaxHistory > 50) {
+                    alert('历史会话记录最大条数必须是 1 到 50 之间的数字。');
+                    return;
+                }
+                
+                onSave({ ...restSettings, maxHistory: numMaxHistory });
             };
             
             const handleResetCurrentSettings = () => {
@@ -1509,20 +1522,36 @@
             };
 
             const handleImport = async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                
-                try {
-                    const importedSettings = await readJsonFile(file);
-                    const name = prompt('请输入新配置的名称：', file.name.replace('.json', ''));
-                    if (name) {
-                        const newProfile = onCreate(name, importedSettings);
-                        onSwitch(newProfile.id);
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+
+                let importedCount = 0;
+                let errors = [];
+
+                for (const file of files) {
+                    try {
+                        const importedSettings = await readJsonFile(file);
+                        if (typeof importedSettings === 'object' && importedSettings !== null && 'apiUrl' in importedSettings) {
+                            const name = file.name.replace(/\.json$/i, '');
+                            onCreate(name, importedSettings);
+                            importedCount++;
+                        } else {
+                            errors.push(`${file.name}: 文件内容不是有效的配置格式。`);
+                        }
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : '未知错误';
+                        errors.push(`${file.name}: ${message}`);
                     }
-                } catch (error) {
-                    alert('导入失败，请确保文件是有效的JSON配置文件。');
                 }
-                e.target.value = ''; // Reset file input
+
+                if (importedCount > 0) {
+                    onShowToast(`${importedCount} 个配置已成功导入！`);
+                }
+                if (errors.length > 0) {
+                    alert(`导入过程中出现错误：\n\n${errors.join('\n')}`);
+                }
+                
+                e.target.value = '';
             };
 
             const handleFetchModels = async () => {
@@ -1586,6 +1615,19 @@
                 );
             };
 
+            const ExportModal = ({ onExportCurrent, onExportAll, onClose }) => {
+                return React.createElement('div', { className: 'fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm' },
+                    React.createElement('div', { className: 'ios-card w-full max-w-sm flex flex-col p-5' },
+                        React.createElement('h3', { className: 'text-lg font-semibold mb-4 text-center' }, '选择导出选项'),
+                        React.createElement('div', { className: 'space-y-3' },
+                            React.createElement('button', { onClick: () => { onExportCurrent(); onClose(); }, className: 'ios-button w-full h-11' }, '仅导出当前配置'),
+                            React.createElement('button', { onClick: () => { onExportAll(); onClose(); }, className: 'ios-button w-full h-11' }, '导出所有配置'),
+                            React.createElement('button', { onClick: onClose, className: 'ios-button ios-button-secondary w-full h-11' }, '取消')
+                        )
+                    )
+                );
+            };
+
             return (
                 React.createElement(React.Fragment, null,
                     React.createElement('div', { className: `slide-panel fixed top-0 right-0 w-full max-w-md h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`},
@@ -1607,19 +1649,16 @@
                                             )
                                         ),
                                         React.createElement('div', null,
-                                            React.createElement('label', { htmlFor: 'maxHistory', className: 'block text-sm font-medium text-gray-700 mb-1' }, '历史记录最大条数'),
+                                            React.createElement('label', { htmlFor: 'maxHistory', className: 'block text-sm font-medium text-gray-700 mb-1' }, '历史会话记录最大条数(1-50)'),
                                             React.createElement('input', { 
                                                 type: 'number', 
                                                 id: 'maxHistory', 
                                                 name: 'maxHistory', 
-                                                value: currentSettings.maxHistory || 10, 
+                                                value: currentSettings.maxHistory ?? '', 
                                                 onChange: handleChange, 
                                                 className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base h-11',
-                                                min: '1',
-                                                max: '50',
-                                                'aria-describedby': 'max-history-description'
-                                            }),
-                                            React.createElement('p', { id: 'max-history-description', className: 'text-xs text-gray-500 mt-1' }, '设置本地存储的对话历史数量 (1-50)。')
+                                                placeholder: '1-50'
+                                            })
                                         ),
                                         React.createElement('div', { className: 'flex gap-2' },
                                             React.createElement('input', { type: 'text', value: newProfileName, onChange: (e) => setNewProfileName(e.target.value), placeholder: '新配置名称', className: 'flex-grow p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base h-11' }),
@@ -1686,12 +1725,12 @@
                         ),
                         React.createElement('div', { className: 'p-4 border-t border-[var(--border-color)] flex-shrink-0 bg-[var(--card-bg)]' },
                             React.createElement('div', { className: 'mx-auto grid gap-2' },
-                                React.createElement('button', { onClick: () => onSave(currentSettings), className: 'ios-button w-full h-11' }, '保存设置'),
+                                React.createElement('button', { onClick: handleSave, className: 'ios-button w-full h-11' }, '保存设置'),
                                 React.createElement('button', { onClick: handleResetCurrentSettings, className: 'ios-button danger w-full h-11' }, '清除配置信息'),
                                 React.createElement('div', { className: 'grid grid-cols-2 gap-2' },
-                                    React.createElement('button', { onClick: onExport, className: 'ios-button ios-button-secondary w-full h-11' }, '导出设置'),
+                                    React.createElement('button', { onClick: () => setIsExportModalOpen(true), className: 'ios-button ios-button-secondary w-full h-11' }, '导出设置'),
                                     React.createElement('button', { onClick: () => importFileRef.current?.click(), className: 'ios-button ios-button-secondary w-full h-11' }, '导入设置'),
-                                    React.createElement('input', { type: 'file', ref: importFileRef, onChange: handleImport, className: 'hidden', accept: '.json' })
+                                    React.createElement('input', { type: 'file', ref: importFileRef, onChange: handleImport, className: 'hidden', accept: '.json', multiple: true })
                                 )
                             )
                         )
@@ -1705,6 +1744,11 @@
                         onClose: () => setFullscreenPrompt(null),
                         onOptimize: handleOptimizePrompt,
                         isOptimizing: isOptimizingField === fullscreenPrompt.key
+                    }),
+                    isExportModalOpen && React.createElement(ExportModal, {
+                        onExportCurrent: onExport,
+                        onExportAll: onExportAll,
+                        onClose: () => setIsExportModalOpen(false)
                     })
                 )
             );
@@ -1998,6 +2042,7 @@
                             React.createElement('li', null, React.createElement('strong', null, '自定义 Prompt: '), '通过修改引导提示、数据库结构等信息，可以定制 AI 的行为，使其生成更符合需求的 SQL。'),
                             React.createElement('li', null, React.createElement('strong', null, '智能优化: '), '点击 Prompt 输入框下方的 "智能优化" 按钮，可利用 AI 自动将输入或上传的文本内容（如数据库结构、术语定义等）优化为更规整、更易于 AI 理解的 YAML 格式。'),
                              React.createElement('li', null, React.createElement('strong', null, '全屏编辑: '), '点击 Prompt 输入框右上角的放大图标，可以在一个更大的、更专注的视图中编辑内容。'),
+                             React.createElement('li', null, React.createElement('strong', null, '批量导入/导出: '), '可以一次性选择多个配置文件进行导入。导出时，也可以选择仅导出当前配置或一次性导出所有配置的多个对应json文件。'),
                             React.createElement('li', null, React.createElement('strong', null, 'API 设置: '), '在这里配置 API 服务地址和 Key。点击 "获取可用模型" 按钮将自动拉取并填充模型列表。')
                         ),
                         React.createElement(Tip, { title: '高级提示：使用 YAML 格式' },
@@ -2399,14 +2444,12 @@
 
             const handleCreateProfile = (name, settings) => {
                 const newProfile = {
-                    id: `profile_${Date.now()}`,
+                    id: `profile_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                     name,
                     settings
                 };
                 const newProfiles = [...profiles, newProfile];
                 setProfiles(newProfiles);
-                setActiveProfileId(newProfile.id);
-                alert(`新配置 "${name}" 已创建并切换！`);
                 return newProfile;
             };
             
@@ -2440,6 +2483,20 @@
             const handleExportProfile = () => {
                 if (!activeProfile) return;
                 downloadAsJson(activeProfile.settings, `${activeProfile.name.replace(/\s/g, '_')}.json`);
+                showToast('当前配置已导出！');
+            };
+
+            const handleExportAllProfiles = () => {
+                if (profiles.length === 0) {
+                    showToast('没有可导出的配置。');
+                    return;
+                }
+                profiles.forEach((profile, index) => {
+                    setTimeout(() => {
+                        downloadAsJson(profile.settings, `${profile.name.replace(/\s/g, '_')}.json`);
+                    }, index * 200);
+                });
+                showToast(`${profiles.length} 个配置已开始导出！`);
             };
 
             useEffect(() => {
@@ -2532,6 +2589,7 @@
                         onDelete: handleDeleteProfile,
                         onRename: handleRenameProfile,
                         onExport: handleExportProfile,
+                        onExportAll: handleExportAllProfiles,
                         onShowToast: showToast
                     }),
                     React.createElement(HistoryPanel, {
