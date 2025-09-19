@@ -48,8 +48,12 @@
             --header-bg: rgba(15, 20, 25, 0.95);
             --info-bg: #0d47a1;
             --info-border: #29b6f6;
-            --danger-bg: #e03131;
-            --danger-hover-bg: #c92a2a;
+            --danger-bg: #e54848;
+            --danger-hover-bg: #c53030;
+            --success-bg: #48bb78;
+            --warning-bg: #ecc94b;
+            --gradient-from: #4a90e2;
+            --gradient-to: #64b5f6;
         }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -289,7 +293,7 @@
         .dark .bg-gray-200 { background-color: #2f3336; }
         .dark .bg-gray-800 { background: linear-gradient(135deg, #1a1f36, #0f1419); }
         .dark .text-gray-500 { color: var(--text-secondary); }
-        .dark .text-gray-600 { color: #8899a6; }
+        .dark .text-gray-600 { color: #aac0d0; } /* Made brighter for better readability */
         .dark .text-gray-700 { color: #d1d5db; }
         .dark .text-gray-800 { color: var(--text-primary); }
         .dark .hover\:bg-gray-200:hover { background-color: #2f3336; }
@@ -327,6 +331,10 @@
             color: white;
             border-radius: 18px 18px 4px 18px;
             box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+        }
+        .dark .user-message {
+            background: linear-gradient(135deg, #2c5aa0, #1e3a5f);
+            box-shadow: 0 2px 8px rgba(44, 90, 160, 0.2);
         }
         .assistant-message {
             background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
@@ -1694,6 +1702,12 @@
                         ),
                         React.createElement(Tip, { title: '高级提示：使用 YAML 格式' },
                             '在 "数据库表结构" 或 "行业术语定义" 等信息中，使用清晰的 YAML 格式可以让 AI 更准确地理解和记忆上下文信息，从而提高生成质量。智能优化功能可以快速完成转换。'
+                        )
+                    ),
+                    React.createElement(Section, { title: '移动端体验优化' },
+                        React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
+                            React.createElement('li', null, React.createElement('strong', null, '界面自适应: '), '本应用界面已为移动设备优化，会自动调整布局以适应手机或平板屏幕。'),
+                            React.createElement('li', null, React.createElement('strong', null, '添加到主屏幕 (PWA): '), 'iOS 用户可以在 Safari 浏览器中点击分享按钮，然后选择 "添加到主屏幕"，即可像原生 App 一样使用本工具，获得沉浸式全屏体验。')
                         )
                     ),
                     React.createElement(Section, { title: 'API URL 支持格式' },
