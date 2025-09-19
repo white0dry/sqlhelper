@@ -1292,7 +1292,7 @@
         };
 
         // --- From components/MainContent.tsx ---
-        const MainContent = ({ conversation, isLoading, editingIndex, editedContent, setEditedContent, onSaveEdit, onCancelEdit, onStartEdit, onSuggestionClick }) => {
+        const MainContent = ({ conversation, isLoading, editingIndex, editedContent, setEditedContent, onSaveEdit, onCancelEdit, onStartEdit, onSuggestionClick, isMounted }) => {
             const chatContainerRef = useRef(null);
             const prevEditingIndex = useRef(null);
             const messageRefs = useRef(new Map());
@@ -1325,7 +1325,7 @@
                 // Always update the ref for the next render.
                 prevEditingIndex.current = editingIndex;
 
-            }, [conversation, editingIndex]);
+            }, [conversation, editingIndex, isMounted]);
 
             const startEditing = (index, content) => {
                 onStartEdit(index, content);
@@ -2538,7 +2538,8 @@
                             onSaveEdit: handleSaveEdit,
                             onCancelEdit: handleCancelEdit,
                             onStartEdit: handleStartEdit,
-                            onSuggestionClick: handleSuggestionClick
+                            onSuggestionClick: handleSuggestionClick,
+                            isMounted: isMounted
                         })
                     ),
                     React.createElement('div', { className: 'flex-shrink-0 bg-transparent z-10' },
