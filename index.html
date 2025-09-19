@@ -1036,26 +1036,29 @@
                 const chatContainer = chatContainerRef.current;
                 if (!chatContainer) return;
 
-                // Case 1: A new edit session is starting.
+                // Case 1: A new edit session is starting. Scroll to the message being edited.
                 if (prevEditingIndex.current === null && editingIndex !== null) {
                     const messageElement = messageRefs.current.get(editingIndex);
                     if (messageElement) {
-                        messageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                 } 
                 // Case 2: An edit session is ending. Do nothing to preserve scroll position.
                 else if (prevEditingIndex.current !== null && editingIndex === null) {
-                    // Intentionally left blank.
+                    // Intentionally do nothing to keep the viewport stable.
                 } 
-                // Case 3: Not in an edit session (e.g., new message received or initial load). Scroll to bottom.
+                // Case 3: Not in an edit session. This covers initial load, history load, and new messages.
                 else if (editingIndex === null) {
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    // Use scrollIntoView on the last message element for robust scrolling.
+                    if (chatContainer.lastElementChild) {
+                        chatContainer.lastElementChild.scrollIntoView({ behavior: 'auto', block: 'end' });
+                    }
                 }
                 
                 // Always update the ref for the next render.
                 prevEditingIndex.current = editingIndex;
 
-            }, [conversation, isLoading, editingIndex]);
+            }, [conversation, editingIndex]);
 
             const startEditing = (index, content) => {
                 onStartEdit(index, content);
@@ -1653,10 +1656,6 @@
             const abortControllerRef = useRef(null);
             
             useEffect(() => {
-                setIsMounted(true);
-            }, []);
-
-            useEffect(() => {
                 const originalConsole = { ...window.console };
                 const formatMessage = (args) => args.map(arg => {
                     try {
@@ -2013,6 +2012,11 @@
                     setActiveProfileId(profiles[0]?.id || DEFAULT_PROFILE.id);
                 }
             }, [profiles, activeProfileId, setProfiles, setActiveProfileId]);
+
+            // This effect should run last to prevent initial animations.
+            useEffect(() => {
+                setIsMounted(true);
+            }, []);
 
             const isPanelOpen = isSettingsOpen || isHistoryOpen || isTutorialOpen || isConsoleOpen;
 
