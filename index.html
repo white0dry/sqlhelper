@@ -458,7 +458,20 @@
                 padding-left: 0.5rem;
                 padding-right: 0.5rem;
             }
+            /* Show header title on mobile with smaller font */
             .ios-header .header-title {
+                flex-direction: column;
+                align-items: center;
+                line-height: 1.2;
+                gap: 0;
+            }
+            .ios-header .header-title h1 {
+                font-size: 0.8rem;
+            }
+            .ios-header .header-title span:not(.w-2) {
+                font-size: 0.7rem;
+            }
+            .ios-header .header-title .w-2.h-2 {
                 display: none;
             }
             .ios-header .flex-1 {
@@ -468,20 +481,31 @@
                 flex-direction: column;
                 gap: 0.5rem; /* 8px */
             }
-            .input-area-buttons-container .ios-button {
-                width: 44px; /* h-11 */
-                height: 44px; /* h-11 */
-                padding: 0;
-            }
+            /* Make all buttons in input area same height */
+            .input-area-buttons-container .ios-button,
             .input-area-buttons-container .ios-button-secondary {
-                height: 36px;
                 width: 44px;
+                height: 44px;
+                padding: 0;
             }
             .slide-panel {
                 max-width: 100%;
             }
-             main.p-4 {
+            main.p-4 {
                 padding: 0.75rem; /* 12px */
+            }
+            /* Align textarea height with stacked buttons */
+            #user-query {
+                min-height: 96px; /* 44px*2 + 8px gap */
+            }
+            /* Make textarea placeholder and text smaller */
+            .input-textarea {
+                font-size: 0.875rem; /* 14px */
+            }
+            /* Make code blocks wrap on mobile */
+            .markdown-content pre {
+                white-space: pre-wrap;
+                word-break: break-all;
             }
         }
     </style>
@@ -1924,7 +1948,8 @@
                 const textarea = document.getElementById('user-query');
                 if (textarea) {
                     textarea.style.height = 'auto';
-                    textarea.style.height = '44px'; // Reset to initial height (h-11)
+                    const isMobile = window.innerWidth <= 768;
+                    textarea.style.height = isMobile ? '96px' : '44px';
                 }
                 
                 await runGeneration(newConversation, false);
@@ -1959,7 +1984,8 @@
                 const textarea = document.getElementById('user-query');
                 if (textarea) {
                      textarea.style.height = 'auto';
-                    textarea.style.height = '44px'; // Reset to initial height (h-11)
+                    const isMobile = window.innerWidth <= 768;
+                    textarea.style.height = isMobile ? '96px' : '44px';
                 }
 
                 const chatHistoryForApi = conversation.slice(0, lastUserMessageIndex + 1);
