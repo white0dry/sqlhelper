@@ -490,8 +490,8 @@
             /* Make all buttons in input area same height */
             .input-area-buttons-container .ios-button,
             .input-area-buttons-container .ios-button-secondary {
-                width: 44px;
-                height: 44px;
+                width: 36px;
+                height: 36px;
                 padding: 0;
             }
             .slide-panel {
@@ -502,7 +502,7 @@
             }
             /* Align textarea height with stacked buttons */
             #user-query {
-                min-height: 96px; /* 44px*2 + 8px gap */
+                min-height: 80px; /* 36px*2 + 8px gap */
             }
             /* Make textarea placeholder and text smaller */
             .input-textarea {
@@ -1955,7 +1955,7 @@
                 if (textarea) {
                     textarea.style.height = 'auto';
                     const isMobile = window.innerWidth <= 768;
-                    textarea.style.height = isMobile ? '96px' : '44px';
+                    textarea.style.height = isMobile ? '80px' : '44px';
                 }
                 
                 await runGeneration(newConversation, false);
@@ -1991,7 +1991,7 @@
                 if (textarea) {
                      textarea.style.height = 'auto';
                     const isMobile = window.innerWidth <= 768;
-                    textarea.style.height = isMobile ? '96px' : '44px';
+                    textarea.style.height = isMobile ? '80px' : '44px';
                 }
 
                 const chatHistoryForApi = conversation.slice(0, lastUserMessageIndex + 1);
