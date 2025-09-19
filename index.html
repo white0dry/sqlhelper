@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>SQL 自动化编写助手</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20448%20512'%3E%3Cpath%20fill='%234a90e2'%20d='M448%2080v48c0%2044.2-100.3%2080-224%2080S0%20172.2%200%20128V80C0%2035.8%20100.3%200%20224%200S448%2035.8%20448%2080zM393.2%20214.7c20.8-7.4%2039.9-16.9%2054.8-28.6V288c0%2044.2-100.3%2080-224%2080S0%20332.2%200%20288V186.1c14.9%2011.8%2034%2021.2%2054.8%2028.6C99.7%20230.7%20159.5%20240%20224%20240s124.3-9.3%20169.2-25.3zM448%20368v48c0%2044.2-100.3%2080-224%2080S0%20460.2%200%20416V368c0-17.5%2013-32.9%2031.5-41.2C86.2%20344.3%20152.6%20352%20224%20352s137.8-7.7%20192.5-25.2c18.5%208.3%2031.5%2023.7%2031.5%2041.2z'/%3E%3C/svg%3E">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20448%20512'%3E%3Cpath%20fill='%234a90e2'
+        d='M448%2080v48c0%2044.2-100.3%2080-224%2080S0%20172.2%200%20128V80C0%2035.8%20100.3%200%20224%200S448%2035.8%20448%2080zM393.2%20214.7c20.8-7.4%2039.9-16.9%2054.8-28.6V288c0%2044.2-100.3%2080-224%2080S0%20332.2%200%20288V186.1c14.9%2011.8%2034%2021.2%2054.8%2028.6C99.7%20230.7%20159.5%20240%20224%20240s124.3-9.3%20169.2-25.3zM448%20368v48c0%2044.2-100.3%2080-224%2080S0%20460.2%200%20416V368c0-17.5%2013-32.9%2031.5-41.2C86.2%20344.3%20152.6%20352%20224%20352s137.8-7.7%20192.5-25.2c18.5%208.3%2031.5%2023.7%2031.5%2041.2z'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -77,9 +78,6 @@
             border: 1px solid var(--border-color);
             position: relative;
             overflow: hidden;
-        }
-        .app-mounted .ios-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .ios-card::before {
             content: '';
@@ -453,7 +451,7 @@
 <body class="antialiased">
     <div id="root"></div>
     <script type="module">
-        import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+        import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
         import ReactDOM from 'react-dom/client';
 
         // All application code is consolidated below.
@@ -1023,10 +1021,25 @@
             const chatContainerRef = useRef(null);
             const prevEditingIndex = useRef(null);
             const messageRefs = useRef(new Map());
+            const isInitialMount = useRef(true);
+
+            useLayoutEffect(() => {
+                const chatContainer = chatContainerRef.current;
+                if (chatContainer && conversation.length > 0) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            }, []);
 
             useEffect(() => {
                 const chatContainer = chatContainerRef.current;
                 if (!chatContainer) return;
+
+                // On initial mount, skip the logic because useLayoutEffect handles scrolling.
+                if (isInitialMount.current) {
+                    isInitialMount.current = false;
+                    prevEditingIndex.current = editingIndex; // Still need to sync the ref.
+                    return;
+                }
 
                 // Case 1: A new edit session is starting.
                 if (prevEditingIndex.current === null && editingIndex !== null) {
