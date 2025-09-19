@@ -448,6 +448,42 @@
             background: linear-gradient(to bottom, var(--gradient-from), var(--gradient-to));
             border-radius: 999px;
         }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            body {
+                font-size: 14px;
+            }
+            .ios-header {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            .ios-header .header-title {
+                display: none;
+            }
+            .ios-header .flex-1 {
+                flex: 1 1 0%;
+            }
+            .input-area-buttons-container {
+                flex-direction: column;
+                gap: 0.5rem; /* 8px */
+            }
+            .input-area-buttons-container .ios-button {
+                width: 44px; /* h-11 */
+                height: 44px; /* h-11 */
+                padding: 0;
+            }
+            .input-area-buttons-container .ios-button-secondary {
+                height: 36px;
+                width: 44px;
+            }
+            .slide-panel {
+                max-width: 100%;
+            }
+             main.p-4 {
+                padding: 0.75rem; /* 12px */
+            }
+        }
     </style>
 <script type="importmap">
 {
@@ -904,7 +940,7 @@
         const Header = ({ onHistoryClick, onSettingsClick, onTutorialClick, onToggleTheme, onConsoleClick, onNewChat, theme, activeProfileName }) => {
             return (
                 React.createElement('header', { className: 'ios-header sticky top-0 z-30 px-4 py-3 flex-shrink-0' },
-                    React.createElement('div', { className: 'lg:max-w-7xl mx-auto flex justify-between items-center' },
+                    React.createElement('div', { className: 'max-w-7xl mx-auto flex justify-between items-center' },
                         React.createElement('div', { className: 'flex-1 flex justify-start items-center gap-1' },
                             React.createElement('button', { onClick: onHistoryClick, className: 'icon-button p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '查看历史' },
                                 React.createElement(HistoryIcon, null)
@@ -916,7 +952,7 @@
                                 React.createElement(PlusIcon, null)
                             )
                         ),
-                        React.createElement('div', { className: 'flex items-center gap-2' },
+                        React.createElement('div', { className: 'header-title flex items-center gap-2' },
                             React.createElement('h1', { className: 'text-xl font-bold bg-gradient-to-r from-[var(--gradient-from)] to-[var(--gradient-to)] bg-clip-text text-transparent' }, 'SQL 自动化编写助手'),
                             React.createElement('span', { className: 'w-2 h-2 bg-gradient-to-r from-[var(--gradient-from)] to-[var(--gradient-to)] rounded-full' }),
                             React.createElement('span', { className: 'text-xl font-semibold text-gray-600 dark:text-gray-400' }, activeProfileName)
@@ -1887,6 +1923,7 @@
                 
                 const textarea = document.getElementById('user-query');
                 if (textarea) {
+                    textarea.style.height = 'auto';
                     textarea.style.height = '44px'; // Reset to initial height (h-11)
                 }
                 
@@ -1921,6 +1958,7 @@
                 
                 const textarea = document.getElementById('user-query');
                 if (textarea) {
+                     textarea.style.height = 'auto';
                     textarea.style.height = '44px'; // Reset to initial height (h-11)
                 }
 
@@ -2039,7 +2077,7 @@
                         theme: theme,
                         activeProfileName: activeProfile.name
                     }),
-                    React.createElement('main', { className: 'lg:max-w-4xl mx-auto w-full flex flex-col relative z-10 flex-grow p-4 pb-0 min-h-0' },
+                    React.createElement('main', { className: 'max-w-4xl mx-auto w-full flex flex-col relative z-10 flex-grow p-4 pb-0 min-h-0' },
                         React.createElement(MainContent, {
                             conversation: conversation,
                             isLoading: isLoading,
@@ -2052,7 +2090,7 @@
                         })
                     ),
                     React.createElement('div', { className: 'flex-shrink-0 bg-transparent z-10' },
-                        React.createElement('div', { className: 'p-4 lg:max-w-4xl mx-auto w-full' },
+                        React.createElement('div', { className: 'p-4 max-w-4xl mx-auto w-full' },
                             React.createElement('div', { className: 'ios-card p-4' },
                                 React.createElement('div', { className: 'flex items-end gap-3' },
                                     React.createElement('textarea', {
@@ -2071,14 +2109,18 @@
                                     }),
                                     isLoading
                                         ? React.createElement('button', { onClick: handleStop, className: 'ios-button danger p-3 flex-shrink-0 h-11' }, React.createElement(StopIcon))
-                                        : React.createElement('div', { className: 'flex items-center gap-2 flex-shrink-0' },
+                                        : React.createElement('div', { className: 'input-area-buttons-container flex items-center gap-2 flex-shrink-0' },
+                                            React.createElement('button', {
+                                                onClick: handleSendMessage,
+                                                disabled: !userQuery.trim() || editingIndex !== null,
+                                                className: 'ios-button p-3 h-11 order-first'
+                                            }, React.createElement(SendIcon)),
                                             React.createElement('button', {
                                                 onClick: handleRegenerateLastResponse,
                                                 disabled: editingIndex !== null || !conversation.some(msg => msg.role === 'assistant'),
                                                 className: 'ios-button ios-button-secondary p-3 h-11',
                                                 'aria-label': '重新生成'
-                                            }, React.createElement(RegenerateIcon)),
-                                            React.createElement('button', { onClick: handleSendMessage, disabled: !userQuery.trim() || editingIndex !== null, className: 'ios-button p-3 h-11' }, React.createElement(SendIcon))
+                                            }, React.createElement(RegenerateIcon))
                                         )
                                 )
                             )
