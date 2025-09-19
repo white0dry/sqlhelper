@@ -74,10 +74,12 @@
             background: var(--card-bg);
             border-radius: 16px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid var(--border-color);
             position: relative;
             overflow: hidden;
+        }
+        .app-mounted .ios-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .ios-card::before {
             content: '';
@@ -354,9 +356,8 @@
             background-size: 10px 10px;
             opacity: 0.3;
         }
-        /* Panel slide animation */
-        .slide-panel {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .app-mounted .slide-panel {
+             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         /* Button hover effects */
         .icon-button {
@@ -466,6 +467,7 @@
         const LOCAL_STORAGE_ACTIVE_PROFILE_ID_KEY = 'sql_assistant_active_profile_id_v2';
         const LOCAL_STORAGE_HISTORY_KEY = 'sql_assistant_history_v2';
         const LOCAL_STORAGE_THEME_KEY = 'sql_assistant_theme_v1';
+        const LOCAL_STORAGE_ACTIVE_CONVERSATION_KEY = 'sql_assistant_active_conversation_v2';
 
         const DEFAULT_SETTINGS = {
             apiUrl: 'https://generativelanguage.googleapis.com/v1beta',
@@ -1026,18 +1028,25 @@
                 const chatContainer = chatContainerRef.current;
                 if (!chatContainer) return;
 
-                const wasEditing = prevEditingIndex.current !== null && editingIndex === null;
-
-                if (wasEditing) {
-                    const messageElement = messageRefs.current.get(prevEditingIndex.current);
+                // Case 1: A new edit session is starting.
+                if (prevEditingIndex.current === null && editingIndex !== null) {
+                    const messageElement = messageRefs.current.get(editingIndex);
                     if (messageElement) {
                         messageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
-                } else if (editingIndex === null) {
+                } 
+                // Case 2: An edit session is ending. Do nothing to preserve scroll position.
+                else if (prevEditingIndex.current !== null && editingIndex === null) {
+                    // Intentionally left blank.
+                } 
+                // Case 3: Not in an edit session (e.g., new message received). Scroll to bottom.
+                else if (editingIndex === null) {
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 }
-
+                
+                // Always update the ref for the next render.
                 prevEditingIndex.current = editingIndex;
+
             }, [conversation, isLoading, editingIndex]);
 
             const startEditing = (index, content) => {
@@ -1614,6 +1623,7 @@
 
         // --- From App.tsx ---
         const App = () => {
+            const [isMounted, setIsMounted] = useState(false);
             const [isSettingsOpen, setSettingsOpen] = useState(false);
             const [isHistoryOpen, setHistoryOpen] = useState(false);
             const [isTutorialOpen, setTutorialOpen] = useState(false);
@@ -1626,13 +1636,17 @@
             const [activeProfileId, setActiveProfileId] = useLocalStorage(LOCAL_STORAGE_ACTIVE_PROFILE_ID_KEY, DEFAULT_PROFILE.id);
             const [history, setHistory] = useLocalStorage(LOCAL_STORAGE_HISTORY_KEY, []);
             const [userQuery, setUserQuery] = useState('');
-            const [conversation, _setConversation] = useState([]);
+            const [conversation, _setConversation] = useLocalStorage(LOCAL_STORAGE_ACTIVE_CONVERSATION_KEY, []);
             const [activeHistoryId, setActiveHistoryId] = useState(null);
 
             const [isLoading, setIsLoading] = useState(false);
             const [editingIndex, setEditingIndex] = useState(null);
             const [editedContent, setEditedContent] = useState('');
             const abortControllerRef = useRef(null);
+            
+            useEffect(() => {
+                setIsMounted(true);
+            }, []);
 
             useEffect(() => {
                 const originalConsole = { ...window.console };
@@ -1708,7 +1722,7 @@
                     
                     return newConversation;
                 });
-            }, [setHistory]);
+            }, [_setConversation, setHistory]);
 
             useEffect(() => {
                 if (theme === 'dark') {
@@ -1775,12 +1789,12 @@
                 setActiveHistoryId(null);
                 handleStop();
                 handleCancelEdit();
-            }, []);
+            }, [_setConversation]);
 
             const handleLoadConversationFromHistory = useCallback((conversationToLoad, historyId) => {
                 _setConversation(conversationToLoad);
                 setActiveHistoryId(historyId);
-            }, []);
+            }, [_setConversation]);
 
             const runGeneration = useCallback(async (chatHistoryForApi, isRegeneration = false, regenerationIndex = -1) => {
                 const activeSettings = activeProfile.settings;
@@ -1800,7 +1814,7 @@
                 isRegeneration ? _setConversation(baseUpdater) : setConversation(baseUpdater);
                 
                 const onChunk = (chunk) => {
-                    setConversation(prev => {
+                    _setConversation(prev => {
                         const lastMessage = prev[prev.length - 1];
                         if (lastMessage && lastMessage.role === 'assistant') {
                             const updatedLastMessage = { ...lastMessage, content: lastMessage.content + chunk };
@@ -1845,7 +1859,7 @@
                     onComplete,
                     onError
                 );
-            }, [activeProfile, setConversation]);
+            }, [activeProfile, _setConversation, setConversation]);
 
             const handleSendMessage = useCallback(async () => {
                 const trimmedQuery = userQuery.trim();
@@ -1864,7 +1878,7 @@
                 }
                 
                 await runGeneration(newConversation, false);
-            }, [userQuery, conversation, setConversation, setUserQuery, runGeneration]);
+            }, [userQuery, conversation, setConversation, runGeneration]);
 
             const handleSaveEdit = useCallback(() => {
                 if (editingIndex === null) return;
@@ -1995,7 +2009,7 @@
             const isPanelOpen = isSettingsOpen || isHistoryOpen || isTutorialOpen || isConsoleOpen;
 
             return (
-                React.createElement('div', { className: 'h-screen flex flex-col relative' },
+                React.createElement('div', { className: `h-screen flex flex-col relative ${isMounted ? 'app-mounted' : ''}` },
                     toastMessage && React.createElement(Toast, { message: toastMessage }),
                     React.createElement(Header, { 
                         onHistoryClick: () => handleToggleHistory(), 
