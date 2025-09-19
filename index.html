@@ -79,7 +79,7 @@
             position: relative;
             overflow: hidden;
         }
-        .ios-card::before {
+        .app-mounted .ios-card::before {
             content: '';
             position: absolute;
             top: 0;
@@ -103,11 +103,13 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
             box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+        .app-mounted .ios-button {
+            transition: all 0.2s;
         }
         .ios-button:hover {
             background: linear-gradient(135deg, var(--accent-dark), var(--accent-color));
@@ -333,9 +335,11 @@
             background: var(--card-bg);
             border: 2px solid transparent;
             border-radius: 12px;
-            transition: all 0.3s;
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none;  /* IE and Edge */
+        }
+        .app-mounted .input-textarea {
+            transition: all 0.3s;
         }
         .input-textarea::-webkit-scrollbar {
             display: none; /* Chrome, Safari, and Opera */
@@ -361,10 +365,12 @@
         .icon-button {
             position: relative;
             overflow: hidden;
-            transition: all 0.3s;
             border-radius: 12px;
         }
-        .icon-button::before {
+        .app-mounted .icon-button {
+            transition: all 0.3s;
+        }
+        .app-mounted .icon-button::before {
             content: '';
             position: absolute;
             top: 50%;
@@ -402,6 +408,8 @@
         }
         .summary-text {
             color: var(--text-secondary);
+        }
+        .app-mounted .summary-text {
             transition: color 0.2s;
         }
         summary:hover .summary-text {
@@ -414,9 +422,11 @@
             border-top: 5px solid transparent;
             border-bottom: 5px solid transparent;
             border-left: 6px solid currentColor;
-            transition: transform 0.3s ease-in-out;
             margin-right: 8px;
             color: var(--text-secondary);
+        }
+        .app-mounted .details-arrow {
+            transition: transform 0.3s ease-in-out;
         }
         summary:hover .details-arrow {
              color: var(--accent-color);
@@ -1021,25 +1031,10 @@
             const chatContainerRef = useRef(null);
             const prevEditingIndex = useRef(null);
             const messageRefs = useRef(new Map());
-            const isInitialMount = useRef(true);
 
             useLayoutEffect(() => {
                 const chatContainer = chatContainerRef.current;
-                if (chatContainer && conversation.length > 0) {
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                }
-            }, []);
-
-            useEffect(() => {
-                const chatContainer = chatContainerRef.current;
                 if (!chatContainer) return;
-
-                // On initial mount, skip the logic because useLayoutEffect handles scrolling.
-                if (isInitialMount.current) {
-                    isInitialMount.current = false;
-                    prevEditingIndex.current = editingIndex; // Still need to sync the ref.
-                    return;
-                }
 
                 // Case 1: A new edit session is starting.
                 if (prevEditingIndex.current === null && editingIndex !== null) {
@@ -1052,7 +1047,7 @@
                 else if (prevEditingIndex.current !== null && editingIndex === null) {
                     // Intentionally left blank.
                 } 
-                // Case 3: Not in an edit session (e.g., new message received). Scroll to bottom.
+                // Case 3: Not in an edit session (e.g., new message received or initial load). Scroll to bottom.
                 else if (editingIndex === null) {
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 }
