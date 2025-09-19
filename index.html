@@ -19,6 +19,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-color: #f8fafb;
@@ -71,7 +72,7 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: var(--bg-color);
+            background: transparent;
             border-radius: 3px;
         }
 
@@ -88,12 +89,12 @@
         /* Firefox 滚动条样式 */
         * {
             scrollbar-width: thin;
-            scrollbar-color: var(--border-color) var(--bg-color);
+            scrollbar-color: var(--border-color) transparent;
         }
 
         /* 暗色模式下的滚动条样式 */
         .dark ::-webkit-scrollbar-track {
-            background: var(--card-bg);
+            background: transparent;
         }
 
         .dark ::-webkit-scrollbar-thumb {
@@ -105,8 +106,16 @@
         }
 
         .dark * {
-            scrollbar-color: #4a5568 var(--card-bg);
+            scrollbar-color: #4a5568 transparent;
         }
+        
+        /* 编辑消息文本框的滚动条样式 */
+        .editing-textarea::-webkit-scrollbar { width: 6px; height: 6px; }
+        .editing-textarea::-webkit-scrollbar-track { background: transparent; }
+        .editing-textarea::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
+        .editing-textarea::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
+        .dark .editing-textarea::-webkit-scrollbar-thumb { background: #4a5568; }
+        .dark .editing-textarea::-webkit-scrollbar-thumb:hover { background: #5a6578; }
 
         /* 移动端滚动条优化 */
         @media (max-width: 768px) {
@@ -773,6 +782,46 @@
             });
         };
 
+        const readExcelFile = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const result = event.target?.result;
+                        if (result instanceof ArrayBuffer) {
+                            const workbook = XLSX.read(result, {
+                                cellStyles: true,
+                                cellFormulas: true,
+                                cellDates: true,
+                                cellNF: true,
+                                sheetStubs: true
+                            });
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                            
+                            let textContent = '';
+                            jsonData.forEach((row, index) => {
+                                if (row.length > 0) {
+                                    textContent += `第${index + 1}行: ${row.filter(cell => cell !== undefined && cell !== null && cell !== '').join(' | ')}\n`;
+                                }
+                            });
+                            
+                            resolve(textContent);
+                        } else {
+                            reject(new Error('文件读取失败'));
+                        }
+                    } catch (error) {
+                        reject(new Error('Excel文件解析失败'));
+                    }
+                };
+                reader.onerror = (error) => {
+                    reject(error);
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        };
+
         // --- From services/apiService.ts ---
         const BUILT_IN_PROMPTS = {
             'guidePrompt': '以下是用户提供的自定义SQL生成规则和要求，请严格遵守：',
@@ -865,7 +914,7 @@
             let requestUrl;
             let requestOptions;
             const isGemini = settings.apiUrl.includes('googleapis.com');
-            
+
             try {
                 let systemPromptBase;
 
@@ -887,11 +936,25 @@
                     requestUrl = `${settings.apiUrl}/models/${settings.apiModel}:streamGenerateContent?alt=sse&key=${settings.apiKey}`;
                     
                     const contents = chatHistory
-                        .filter(msg => msg.content.trim() !== '')
-                        .map(msg => ({
-                            role: msg.role === 'assistant' ? 'model' : 'user',
-                            parts: [{ text: msg.content }]
-                        }));
+                        .filter(msg => (msg.content && msg.content.trim() !== '') || msg.image)
+                        .map(msg => {
+                            const parts = [];
+                            if (msg.image) {
+                                parts.push({
+                                    inlineData: {
+                                        mimeType: msg.image.mimeType,
+                                        data: msg.image.data
+                                    }
+                                });
+                            }
+                            if (msg.content && msg.content.trim() !== '') {
+                                parts.push({ text: msg.content });
+                            }
+                            return {
+                                role: msg.role === 'assistant' ? 'model' : 'user',
+                                parts
+                            };
+                        });
 
                     const body = {
                         contents,
@@ -917,7 +980,24 @@
                         requestUrl = new URL('chat/completions', baseUrl).href;
                     }
 
-                    const messages = [{ role: 'system', content: systemPrompt }, ...chatHistory];
+                    const openAICompatibleMessages = chatHistory.map(msg => {
+                        if (msg.image && msg.role === 'user') {
+                            const contentParts = [];
+                            if (msg.content && msg.content.trim()) {
+                                contentParts.push({ type: 'text', text: msg.content });
+                            }
+                            contentParts.push({
+                                type: 'image_url',
+                                image_url: {
+                                    url: `data:${msg.image.mimeType};base64,${msg.image.data}`
+                                }
+                            });
+                            return { role: 'user', content: contentParts };
+                        }
+                        return { role: msg.role, content: msg.content };
+                    });
+
+                    const messages = [{ role: 'system', content: systemPrompt }, ...openAICompatibleMessages];
                     
                     requestOptions = {
                         method: 'POST',
@@ -945,6 +1025,11 @@
                 const response = await fetch(requestUrl, requestOptions);
 
                 if (!response.ok) {
+                    const hasImage = chatHistory.some(msg => msg.image);
+                    if (hasImage && response.status >= 400 && response.status < 500) {
+                         throw new Error('当前配置的API不支持图片上传功能，或图片格式/大小有误。');
+                    }
+                    
                     let errData;
                     try {
                       errData = await response.json();
@@ -1292,29 +1377,25 @@
         };
 
         // --- From components/MainContent.tsx ---
-        const MainContent = ({ conversation, isLoading, editingIndex, editedContent, setEditedContent, onSaveEdit, onCancelEdit, onStartEdit, onSuggestionClick, isMounted }) => {
+        const MainContent = ({ conversation, isLoading, editingIndex, editedContent, editedImage, setEditedContent, setEditedImage, onSaveEdit, onCancelEdit, onStartEdit, onSuggestionClick, isMounted, onRemoveEditedImage, onPreviewImage }) => {
             const chatContainerRef = useRef(null);
             const prevEditingIndex = useRef(null);
             const messageRefs = useRef(new Map());
+            const editImageInputRef = useRef(null);
 
             useLayoutEffect(() => {
                 const chatContainer = chatContainerRef.current;
                 if (!chatContainer) return;
 
-                // Case 1: A new edit session is starting. Scroll to the message being edited.
                 if (prevEditingIndex.current === null && editingIndex !== null) {
                     const messageElement = messageRefs.current.get(editingIndex);
                     if (messageElement) {
                         messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                 }
-                // Case 2: An edit session is ending. Do nothing to preserve scroll position.
                 else if (prevEditingIndex.current !== null && editingIndex === null) {
-                    // Intentionally do nothing to keep the viewport stable.
                 }
-                // Case 3: Not in an edit session. This covers initial load, history load, and new messages.
                 else if (editingIndex === null) {
-                    // Use a timeout to ensure rendering is complete before scrolling.
                     setTimeout(() => {
                         if (chatContainer?.lastElementChild) {
                             chatContainer.lastElementChild.scrollIntoView({ behavior: 'auto', block: 'end' });
@@ -1322,14 +1403,50 @@
                     }, 0);
                 }
 
-                // Always update the ref for the next render.
                 prevEditingIndex.current = editingIndex;
 
             }, [conversation, editingIndex, isMounted]);
 
-            const startEditing = (index, content) => {
-                onStartEdit(index, content);
+            const startEditing = (index, content, image) => {
+                onStartEdit(index, content, image);
             };
+
+            const processEditImageFile = (file) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const dataUrl = e.target.result;
+                    const base64Data = dataUrl.split(',')[1];
+                    setEditedImage({
+                        data: base64Data,
+                        mimeType: file.type,
+                        dataUrl: dataUrl
+                    });
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const handleEditImageUpload = (event) => {
+                const file = event.target.files?.[0];
+                if (file) {
+                    processEditImageFile(file);
+                }
+                event.target.value = ''; // Allow re-uploading the same file
+            };
+
+            const handleEditPaste = (event) => {
+                const items = (event.clipboardData || window.clipboardData).items;
+                for (const item of items) {
+                    if (item.kind === 'file' && item.type.startsWith('image/')) {
+                        const file = item.getAsFile();
+                        if (file) {
+                            processEditImageFile(file);
+                            event.preventDefault();
+                            return;
+                        }
+                    }
+                }
+            };
+
 
             return React.createElement('div', { className: 'ios-card flex flex-col flex-grow min-h-0' },
                 React.createElement('div', { ref: chatContainerRef, className: 'flex-grow overflow-y-auto p-5 space-y-6' },
@@ -1371,21 +1488,32 @@
                                 },
                                 editingIndex === index ?
                                     React.createElement('div', { className: 'user-message p-3 w-full max-w-[75%]' },
+                                        React.createElement('input', { type: 'file', ref: editImageInputRef, className: 'hidden', accept: 'image/*', onChange: handleEditImageUpload }),
+                                        editedImage && React.createElement('div', { className: 'relative mb-2 w-24 h-24' },
+                                            React.createElement('img', { src: editedImage.dataUrl, alt: '正在编辑的图片', className: 'w-full h-full object-cover rounded-lg border-2 border-white/30 cursor-pointer', onClick: () => onPreviewImage(editedImage.dataUrl) }),
+                                            React.createElement('button', {
+                                                onClick: onRemoveEditedImage,
+                                                className: 'absolute -top-2 -right-2 bg-[var(--danger-bg)] text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md hover:bg-[var(--danger-hover-bg)] transition',
+                                                'aria-label': '移除图片'
+                                            }, React.createElement('i', { className: 'fa-solid fa-xmark' }))
+                                        ),
                                         React.createElement('textarea', {
                                             value: editedContent,
                                             onChange: e => setEditedContent(e.target.value),
-                                            className: 'w-full bg-white/20 rounded-md p-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50',
+                                            onPaste: handleEditPaste,
+                                            className: 'w-full bg-white/20 rounded-md p-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 editing-textarea',
                                             rows: 3
                                         }),
-                                        React.createElement('div', { className: 'flex justify-end gap-2 mt-2' },
-                                            React.createElement('button', { onClick: onCancelEdit, className: 'text-xs px-3 py-1 rounded-lg font-semibold bg-gray-400 text-white hover:bg-gray-500 transition transform active:scale-95' }, '取消'),
-                                            React.createElement('button', { onClick: onSaveEdit, className: 'text-xs px-3 py-1 rounded-lg font-semibold bg-white text-[var(--accent-color)] hover:bg-gray-100 transition transform active:scale-95' }, '保存')
+                                        React.createElement('div', { className: 'flex justify-end items-center gap-2 mt-2' },
+                                            React.createElement('button', { onClick: () => editImageInputRef.current?.click(), className: 'h-8 text-xs px-3 py-1 rounded-lg font-semibold bg-white/20 text-white hover:bg-white/30 transition transform active:scale-95 flex items-center justify-center min-w-16' }, React.createElement('i', { className: 'fa-solid fa-image' })),
+                                            React.createElement('button', { onClick: onCancelEdit, className: 'h-8 text-xs px-3 py-1 rounded-lg font-semibold bg-gray-400 text-white hover:bg-gray-500 transition transform active:scale-95 flex items-center justify-center min-w-16' }, '取消'),
+                                            React.createElement('button', { onClick: onSaveEdit, className: 'h-8 text-xs px-3 py-1 rounded-lg font-semibold bg-white text-[var(--accent-color)] hover:bg-gray-100 transition transform active:scale-95 flex items-center justify-center min-w-16' }, '保存')
                                         )
                                     ) :
                                     [
                                         React.createElement('button', {
                                             key: `edit-${index}`,
-                                            onClick: () => startEditing(index, msg.content),
+                                            onClick: () => startEditing(index, msg.content, msg.image),
                                             disabled: isLoading,
                                             className: 'opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 hover:text-[var(--accent-color)] disabled:opacity-20 active:scale-90 mb-1 flex-shrink-0', 'aria-label': '编辑'
                                         },
@@ -1393,8 +1521,11 @@
                                         ),
                                         React.createElement('div', {
                                             key: `msg-${index}`,
-                                            className: 'user-message p-3 max-w-[75%] whitespace-pre-wrap break-words text-sm'
-                                        }, msg.content)
+                                            className: 'user-message p-3 max-w-[75%]'
+                                        },
+                                            msg.image && React.createElement('img', { src: msg.image.dataUrl, alt: '用户上传的图片', className: 'mb-2 rounded-lg max-w-full h-auto border-2 border-white/30 cursor-pointer', onClick: () => onPreviewImage(msg.image.dataUrl) }),
+                                            msg.content && React.createElement('div', { className: 'whitespace-pre-wrap break-words text-sm' }, msg.content)
+                                        )
                                     ]
                                 )
                             } else {
@@ -1427,7 +1558,7 @@
         
         // --- From components/SettingsPanel.tsx ---
         const promptFields = [
-            { key: 'guidePrompt', label: '1. 引导提示 (Guide Prompt)', description: 'AI将理解这是您提供的自定义SQL生成规则和要求', placeholder: '输入您的自定义引导提示...\n例如：\n规则:\n - 使用标准SQL语法...' },
+            { key: 'guidePrompt', label: '1. SQL生成规则 (Guide Prompt)', description: 'AI将理解这是您提供的自定义SQL生成规则和要求', placeholder: '输入您的自定义引导提示...\n例如：\n规则:\n - 使用标准SQL语法...' },
             { key: 'dbSchema', label: '2. 数据库表结构 (DB Schema)', description: 'AI将理解这是数据库的表名和字段名定义', placeholder: '输入表名和字段名...\n例如：\ntables:\n  employees:\n    - id: int...' },
             { key: 'exampleChat', label: '3. 示例对话 (Example Chat)', description: 'AI将参考这些示例来理解您的查询模式', placeholder: '输入示例对话...\n例如：\n- 用户: 查询所有员工\n  SQL: SELECT * FROM employees' },
             { key: 'terminology', label: '4. 行业术语定义 (Terminology)', description: 'AI将根据这些定义理解特定的业务术语', placeholder: '输入行业术语及其定义...\n例如：\n术语:\n  KPI: 关键绩效指标' },
@@ -1436,7 +1567,7 @@
         const SettingsPanel = ({ isOpen, onClose, activeProfile, profiles, onSave, onSwitch, onCreate, onDelete, onRename, onExport, onExportAll, onShowToast }) => {
             const [currentSettings, setCurrentSettings] = useState(activeProfile.settings);
             const [newProfileName, setNewProfileName] = useState('');
-            const [isOptimizingField, setIsOptimizingField] = useState(null);
+            const [optimizingState, setOptimizingState] = useState({ key: null, controller: null });
             const importFileRef = useRef(null);
             const [availableModels, setAvailableModels] = useState([]);
             const [isFetchingModels, setIsFetchingModels] = useState(false);
@@ -1475,9 +1606,26 @@
             const handleFileChange = async (e, key) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                    const content = await file.text();
-                    setCurrentSettings(prev => ({...prev, [key]: content}));
+                    try {
+                        let content;
+                        const fileName = file.name.toLowerCase();
+
+                        if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                            if (!window.XLSX) {
+                                throw new Error('Excel解析库 (SheetJS) 未加载。');
+                            }
+                            content = await readExcelFile(file);
+                        } else {
+                            content = await file.text();
+                        }
+                        
+                        setCurrentSettings(prev => ({...prev, [key]: content}));
+                        onShowToast('文件内容已成功导入！');
+                    } catch (error) {
+                        alert(`文件处理失败: ${error instanceof Error ? error.message : String(error)}`);
+                    }
                 }
+                e.target.value = ''; // Allow re-uploading the same file
             };
             
             const handleSaveNewProfile = () => {
@@ -1487,6 +1635,14 @@
                 }
                 onCreate(newProfileName.trim(), DEFAULT_SETTINGS);
                 setNewProfileName('');
+            };
+
+            const handleStopOptimization = () => {
+                if (optimizingState.controller) {
+                    optimizingState.controller.abort();
+                    console.log('Optimization stopped by user.');
+                }
+                setOptimizingState({ key: null, controller: null });
             };
             
             const handleOptimizePrompt = async (key, contentToOptimize, onComplete) => {
@@ -1500,11 +1656,13 @@
                     return;
                 }
                 
-                setIsOptimizingField(key);
+                const controller = new AbortController();
+                setOptimizingState({ key, controller });
+
                 try {
                     const prompt = `You are an expert YAML converter. Your task is to convert the following text into a clean, well-structured YAML format. **Strictly output only the YAML content itself, wrapped within <yaml_output> tags.** Do not include any explanations, introductions, or conversational text. The text to convert is:\n\n---\n\n${originalContent}`;
                     
-                    const apiResponse = await generateSimpleText(currentSettings, prompt);
+                    const apiResponse = await generateSimpleText(currentSettings, prompt, controller.signal);
                     const match = apiResponse.match(/<yaml_output>([\s\S]*)<\/yaml_output>/);
                     const optimizedContent = match ? match[1].trim() : apiResponse.trim();
                     
@@ -1515,9 +1673,16 @@
                         throw new Error("API did not return any parsable content.");
                     }
                 } catch (error) {
-                    alert(`优化失败: ${error instanceof Error ? error.message : '未知错误'}`);
+                     if (error.name !== 'AbortError') {
+                        alert(`优化失败: ${error instanceof Error ? error.message : '未知错误'}`);
+                    }
                 } finally {
-                    setIsOptimizingField(null);
+                    setOptimizingState(prevState => {
+                        if (prevState.key === key) {
+                            return { key: null, controller: null };
+                        }
+                        return prevState;
+                    });
                 }
             };
 
@@ -1575,12 +1740,19 @@
                 }
             };
 
-            const FullscreenEditor = ({ prompt, onSave, onClose, onOptimize, isOptimizing }) => {
+            const FullscreenEditor = ({ prompt, onSave, onClose, onOptimize, isOptimizing, onStopOptimize }) => {
                 const [content, setContent] = useState(prompt.content);
 
                 const handleSave = () => {
                     onSave(prompt.key, content);
-                    onClose();
+                };
+
+                const handleOptimizeClick = () => {
+                    if (content !== prompt.content) {
+                        alert('请先点击确认修改');
+                        return;
+                    }
+                    onOptimize(prompt.key, content, setContent);
                 };
 
                 return React.createElement('div', { className: 'fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm' },
@@ -1589,17 +1761,21 @@
                             React.createElement('div', { className: 'flex justify-between items-center' },
                                 React.createElement('h2', { className: 'text-xl font-bold' }, `编辑: ${prompt.label}`),
                                 React.createElement('div', { className: 'flex items-center gap-2' },
-                                    React.createElement('button', { 
-                                        onClick: () => onOptimize(prompt.key, content, setContent), 
-                                        disabled: isOptimizing,
-                                        className: 'icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '智能优化'
-                                    }, isOptimizing ? React.createElement('div', {className: 'small-loader'}) : React.createElement('i', { className: 'fa-solid fa-wand-magic-sparkles text-xl' })),
                                     React.createElement('button', { onClick: handleSave, className: 'icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '保存' },
                                         React.createElement('i', { className: 'fa-solid fa-check text-xl' })
                                     ),
                                     React.createElement('button', { onClick: onClose, className: 'icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '关闭' },
                                        React.createElement('i', { className: 'fa-solid fa-xmark text-xl' })
-                                    )
+                                    ),
+                                    isOptimizing
+                                        ? React.createElement('button', { 
+                                            onClick: onStopOptimize,
+                                            className: 'icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors text-[var(--danger-bg)]', 'aria-label': '停止优化'
+                                          }, React.createElement('i', { className: 'fa-solid fa-stop text-xl' }))
+                                        : React.createElement('button', { 
+                                            onClick: handleOptimizeClick,
+                                            className: 'icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '智能优化'
+                                          }, React.createElement('i', { className: 'fa-solid fa-wand-magic-sparkles text-xl' }))
                                 )
                             )
                         ),
@@ -1706,18 +1882,19 @@
                                         React.createElement('label', { htmlFor: key, className: 'block text-lg font-semibold mb-3' }, label),
                                         React.createElement('p', { className: 'text-sm text-gray-600 mb-2' }, description),
                                         React.createElement('textarea', { id: key, name: key, value: currentSettings[key], onChange: handleChange, className: 'w-full border-2 border-[var(--border-color)] rounded-lg p-3 text-base resize-vertical min-h-[120px] bg-[var(--card-bg)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[var(--accent-color)]/20', placeholder: placeholder }),
-                                        React.createElement('input', { type: 'file', id: `${key}-upload`, className: 'hidden', accept: '.txt,.md,.yaml,.yml,.sql', onChange: (e) => handleFileChange(e, key) }),
+                                        React.createElement('input', { type: 'file', id: `${key}-upload`, className: 'hidden', accept: '.txt,.md,.yaml,.yml,.sql,.xlsx,.xls', onChange: (e) => handleFileChange(e, key) }),
                                         React.createElement('div', { className: 'mt-3 grid grid-cols-2 gap-2' },
                                             React.createElement('button', { onClick: () => document.getElementById(`${key}-upload`)?.click(), className: 'ios-button ios-button-secondary w-full h-11' }, '上传文件'),
-                                            React.createElement('button', {
-                                                onClick: () => handleOptimizePrompt(key, null, (newContent) => setCurrentSettings(prev => ({...prev, [key]: newContent}))),
-                                                className: 'ios-button ios-button-secondary w-full flex items-center justify-center gap-2 h-11',
-                                                disabled: isOptimizingField !== null,
-                                            },
-                                                isOptimizingField === key
-                                                    ? React.createElement(React.Fragment, null, React.createElement('div', { className: 'small-loader' }), React.createElement('span', null, '优化中...'))
-                                                    : React.createElement(React.Fragment, null, React.createElement('i', { className: 'fa-solid fa-wand-magic-sparkles' }), React.createElement('span', null, '智能优化'))
-                                            )
+                                            optimizingState.key === key
+                                                ? React.createElement('button', { 
+                                                    onClick: handleStopOptimization, 
+                                                    className: 'ios-button danger w-full flex items-center justify-center gap-2 h-11' 
+                                                }, React.createElement('i', { className: 'fa-solid fa-stop' }), '停止优化')
+                                                : React.createElement('button', {
+                                                    onClick: () => handleOptimizePrompt(key, null, (newContent) => setCurrentSettings(prev => ({...prev, [key]: newContent}))),
+                                                    className: 'ios-button ios-button-secondary w-full flex items-center justify-center gap-2 h-11',
+                                                    disabled: optimizingState.key !== null,
+                                                }, React.createElement('i', { className: 'fa-solid fa-wand-magic-sparkles' }), React.createElement('span', null, '智能优化'))
                                         )
                                     )
                                 ))
@@ -1743,7 +1920,8 @@
                         },
                         onClose: () => setFullscreenPrompt(null),
                         onOptimize: handleOptimizePrompt,
-                        isOptimizing: isOptimizingField === fullscreenPrompt.key
+                        isOptimizing: optimizingState.key === fullscreenPrompt.key,
+                        onStopOptimize: handleStopOptimization
                     }),
                     isExportModalOpen && React.createElement(ExportModal, {
                         onExportCurrent: onExport,
@@ -1801,7 +1979,7 @@
                 ),
                 React.createElement('pre', {
                     ref: preRef,
-                    className: 'mt-2 p-3 pt-12 bg-gray-800 text-white rounded-lg overflow-auto mono text-xs'
+                    className: 'mt-2 p-3 pt-12 bg-gray-800 text-white rounded-lg overflow-y-auto mono text-xs whitespace-pre-wrap word-break-all max-h-48'
                 }, 
                     React.createElement('code', { className: 'language-sql text-xs' }, code)
                 )
@@ -2027,6 +2205,7 @@
                         React.createElement('p', null, '欢迎使用 SQL 自动化编写助手！本工具旨在帮助您通过自然语言快速生成和优化 SQL 查询。'),
                         React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
                             React.createElement('li', null, React.createElement('strong', null, '对话式生成: '), '在下方的输入框中输入数据需求，点击发送即可生成 SQL。'),
+                            React.createElement('li', null, React.createElement('strong', null, '图片上传: '), '点击输入框旁的图片图标，可以上传图片与文字一同分析 (仅支持 Gemini 等识图模型)。'),
                             React.createElement('li', null, React.createElement('strong', null, '持续优化: '), '可以继续输入指令，对已生成的 SQL 进行修改，例如 "添加 xx 条件" 或 "按 xx 排序"。'),
                             React.createElement('li', null, React.createElement('strong', null, '编辑与重生成: '), '将鼠标悬停在消息上可点击铅笔图标进行编辑。也可以点击 "重新生成" 按钮让 AI 重新回答最后一个问题。'),
                             React.createElement('li', null, React.createElement('strong', null, '复制代码块: '), 'AI 回复的代码块右上角会出现复制按钮，方便一键复制代码。'),
@@ -2035,11 +2214,11 @@
                             React.createElement('li', null, React.createElement('strong', null, '开发者控制台: '), '点击标题栏左侧的终端图标，可以查看应用的详细日志，便于排查API调用等问题。')
                         )
                     ),
-                    React.createElement(Section, { title: '配置管理 (设置面板)' },
+                    React.createElement(Section, { title: '设置面板' },
                          React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
                             React.createElement('li', null, React.createElement('strong', null, '多套配置: '), '点击标题栏右侧的齿轮图标，可以创建多套配置方案，以适应不同的数据库或项目需求。'),
                             React.createElement('li', null, React.createElement('strong', null, '历史记录数量: '), '现在您可以在“配置管理”中设置要保存的最大历史对话条数。'),
-                            React.createElement('li', null, React.createElement('strong', null, '自定义 Prompt: '), '通过修改引导提示、数据库结构等信息，可以定制 AI 的行为，使其生成更符合需求的 SQL。'),
+                            React.createElement('li', null, React.createElement('strong', null, '自定义 Prompt: '), '通过修改SQL生成规则、数据库结构等信息，可以定制 AI 的行为，使其生成更符合需求的 SQL。支持上传文件 (.txt, .md, .yaml, .sql, .xlsx, .xls)。'),
                             React.createElement('li', null, React.createElement('strong', null, '智能优化: '), '点击 Prompt 输入框下方的 "智能优化" 按钮，可利用 AI 自动将输入或上传的文本内容（如数据库结构、术语定义等）优化为更规整、更易于 AI 理解的 YAML 格式。'),
                              React.createElement('li', null, React.createElement('strong', null, '全屏编辑: '), '点击 Prompt 输入框右上角的放大图标，可以在一个更大的、更专注的视图中编辑内容。'),
                              React.createElement('li', null, React.createElement('strong', null, '批量导入/导出: '), '可以一次性选择多个配置文件进行导入。导出时，也可以选择仅导出当前配置或一次性导出所有配置的多个对应json文件。'),
@@ -2067,6 +2246,23 @@
         };
 
         // --- From App.tsx ---
+        const ChatImagePreview = ({ image, onRemove, onPreview }) => {
+            if (!image) return null;
+            return React.createElement('div', { className: 'relative mb-2 w-24 h-24' },
+                React.createElement('img', { 
+                    src: image.dataUrl, 
+                    alt: '上传的图片预览', 
+                    className: 'w-full h-full object-cover rounded-lg border border-[var(--border-color)] cursor-pointer',
+                    onClick: () => onPreview(image.dataUrl)
+                }),
+                React.createElement('button', {
+                    onClick: onRemove,
+                    className: 'absolute -top-2 -right-2 bg-[var(--danger-bg)] text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md hover:bg-[var(--danger-hover-bg)] transition',
+                    'aria-label': '移除图片'
+                }, React.createElement('i', { className: 'fa-solid fa-xmark' }))
+            );
+        };
+
         const App = () => {
             const [isMounted, setIsMounted] = useState(false);
             const [isSettingsOpen, setSettingsOpen] = useState(false);
@@ -2083,11 +2279,15 @@
             const [userQuery, setUserQuery] = useState('');
             const [conversation, _setConversation] = useLocalStorage(LOCAL_STORAGE_ACTIVE_CONVERSATION_KEY, []);
             const [activeHistoryId, setActiveHistoryId] = useLocalStorage(LOCAL_STORAGE_ACTIVE_HISTORY_ID_KEY, null);
+            const [previewImageUrl, setPreviewImageUrl] = useState(null);
 
             const [isLoading, setIsLoading] = useState(false);
             const [editingIndex, setEditingIndex] = useState(null);
             const [editedContent, setEditedContent] = useState('');
+            const [editedImage, setEditedImage] = useState(null);
+            const [chatImage, setChatImage] = useState(null);
             const abortControllerRef = useRef(null);
+            const imageInputRef = useRef(null);
 
             const isLastMessageFromUser = useMemo(() => {
                 return conversation.length > 0 && conversation[conversation.length - 1].role === 'user';
@@ -2236,14 +2436,18 @@
                 }
             };
 
+            const handleRemoveEditedImage = () => setEditedImage(null);
+
             const handleCancelEdit = () => {
                 setEditingIndex(null);
                 setEditedContent('');
+                setEditedImage(null);
             };
 
             const handleNewChat = useCallback(() => {
                 _setConversation([]);
                 setUserQuery('');
+                setChatImage(null);
                 setActiveHistoryId(null);
                 handleStop();
                 handleCancelEdit();
@@ -2335,11 +2539,15 @@
                 const trimmedQuery = userQuery.trim();
                 let chatHistoryForApi;
 
-                if (trimmedQuery) {
+                if (trimmedQuery || chatImage) {
                     const userMessage = { role: 'user', content: trimmedQuery };
+                    if (chatImage) {
+                        userMessage.image = chatImage;
+                    }
                     chatHistoryForApi = [...conversation, userMessage];
                     setConversation(chatHistoryForApi);
                     setUserQuery('');
+                    setChatImage(null);
                     
                     const textarea = document.getElementById('user-query');
                     if (textarea) {
@@ -2355,23 +2563,35 @@
                 }
                 
                 await runGeneration(chatHistoryForApi, false);
-            }, [userQuery, conversation, setConversation, runGeneration, isLastMessageFromUser]);
+            }, [userQuery, chatImage, conversation, setConversation, runGeneration, isLastMessageFromUser]);
 
             const handleSaveEdit = useCallback(() => {
                 if (editingIndex === null) return;
                 const trimmedContent = editedContent.trim();
-                if (!trimmedContent) {
-                    alert('内容不能为空！');
+                if (!trimmedContent && !editedImage) {
+                    alert('内容和图片不能都为空！');
                     return;
                 }
                 
                 const updatedConversation = [...conversation];
-                updatedConversation[editingIndex] = { ...updatedConversation[editingIndex], content: trimmedContent };
+                const originalMessage = updatedConversation[editingIndex];
+                const updatedMessage = { 
+                    ...originalMessage,
+                    content: trimmedContent, 
+                    image: editedImage 
+                };
+
+                if (!updatedMessage.image) {
+                    delete updatedMessage.image;
+                }
+
+                updatedConversation[editingIndex] = updatedMessage;
                 
                 setConversation(updatedConversation);
                 setEditingIndex(null);
                 setEditedContent('');
-            }, [editingIndex, editedContent, conversation, setConversation]);
+                setEditedImage(null);
+            }, [editingIndex, editedContent, editedImage, conversation, setConversation]);
             
             const handleSuggestionClick = useCallback(async (prompt) => {
                 const trimmedQuery = prompt.trim();
@@ -2383,6 +2603,7 @@
                     
                     setConversation(chatHistoryForApi);
                     setUserQuery('');
+                    setChatImage(null);
             
                     await runGeneration(chatHistoryForApi, false);
                 } catch (error) {
@@ -2424,9 +2645,46 @@
                 }
             };
             
-            const handleStartEdit = (index, content) => {
+            const handleStartEdit = (index, content, image) => {
                 setEditingIndex(index);
                 setEditedContent(content);
+                setEditedImage(image || null);
+            };
+
+            const processImageFile = (file, imageSetter) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const dataUrl = e.target.result;
+                    const base64Data = dataUrl.split(',')[1];
+                    imageSetter({
+                        data: base64Data,
+                        mimeType: file.type,
+                        dataUrl: dataUrl
+                    });
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const handleImageUpload = (event) => {
+                const file = event.target.files?.[0];
+                if (file) {
+                    processImageFile(file, setChatImage);
+                }
+                event.target.value = ''; // Allow re-uploading the same file
+            };
+            
+            const handlePaste = (event) => {
+                const items = (event.clipboardData || window.clipboardData).items;
+                for (const item of items) {
+                    if (item.kind === 'file' && item.type.startsWith('image/')) {
+                        const file = item.getAsFile();
+                        if (file) {
+                            processImageFile(file, setChatImage);
+                            event.preventDefault();
+                            return;
+                        }
+                    }
+                }
             };
 
             const handleSaveProfileSettings = (updatedSettings) => {
@@ -2534,17 +2792,26 @@
                             isLoading: isLoading,
                             editingIndex: editingIndex,
                             editedContent: editedContent,
+                            editedImage: editedImage,
                             setEditedContent: setEditedContent,
+                            setEditedImage: setEditedImage,
                             onSaveEdit: handleSaveEdit,
                             onCancelEdit: handleCancelEdit,
                             onStartEdit: handleStartEdit,
                             onSuggestionClick: handleSuggestionClick,
-                            isMounted: isMounted
+                            isMounted: isMounted,
+                            onRemoveEditedImage: handleRemoveEditedImage,
+                            onPreviewImage: (url) => setPreviewImageUrl(url)
                         })
                     ),
                     React.createElement('div', { className: 'flex-shrink-0 bg-transparent z-10' },
                         React.createElement('div', { className: 'p-4 max-w-4xl mx-auto w-full' },
                             React.createElement('div', { className: 'ios-card p-4' },
+                                React.createElement(ChatImagePreview, { 
+                                    image: chatImage, 
+                                    onRemove: () => setChatImage(null),
+                                    onPreview: (url) => setPreviewImageUrl(url)
+                                }),
                                 React.createElement('div', { className: 'flex items-end gap-3' },
                                     React.createElement('textarea', {
                                         id: 'user-query',
@@ -2558,22 +2825,36 @@
                                             e.target.style.height = `${e.target.scrollHeight}px`;
                                         },
                                         onKeyDown: handleKeyDown,
+                                        onPaste: handlePaste,
                                         disabled: isLoading || editingIndex !== null
                                     }),
                                     isLoading
-                                        ? React.createElement('button', { onClick: handleStop, className: 'ios-button danger p-3 flex-shrink-0 h-11' }, React.createElement(StopIcon))
+                                        ? React.createElement('button', { onClick: handleStop, className: 'ios-button danger h-11 w-11 p-0 flex-shrink-0' }, React.createElement(StopIcon))
                                         : React.createElement('div', { className: 'input-area-buttons-container flex items-center gap-2 flex-shrink-0' },
                                             React.createElement('button', {
-                                                onClick: handleSendMessage,
-                                                disabled: (!userQuery.trim() && !isLastMessageFromUser) || editingIndex !== null,
-                                                className: 'ios-button p-3 h-11 order-first'
-                                            }, React.createElement(SendIcon)),
+                                                onClick: () => imageInputRef.current?.click(),
+                                                disabled: isLoading || editingIndex !== null,
+                                                className: 'ios-button ios-button-secondary h-11 w-11 p-0',
+                                                'aria-label': '上传图片'
+                                            }, React.createElement('i', { className: 'fa-solid fa-image' })),
+                                            React.createElement('input', {
+                                                type: 'file',
+                                                ref: imageInputRef,
+                                                className: 'hidden',
+                                                accept: 'image/*',
+                                                onChange: handleImageUpload
+                                            }),
                                             React.createElement('button', {
                                                 onClick: handleRegenerateLastResponse,
                                                 disabled: editingIndex !== null || !conversation.some(msg => msg.role === 'user'),
-                                                className: 'ios-button ios-button-secondary p-3 h-11',
+                                                className: 'ios-button ios-button-secondary h-11 w-11 p-0',
                                                 'aria-label': '重新生成'
-                                            }, React.createElement(RegenerateIcon))
+                                            }, React.createElement(RegenerateIcon)),
+                                            React.createElement('button', {
+                                                onClick: handleSendMessage,
+                                                disabled: (!userQuery.trim() && !chatImage && !isLastMessageFromUser) || editingIndex !== null,
+                                                className: 'ios-button h-11 w-11 p-0'
+                                            }, React.createElement(SendIcon))
                                         )
                                 )
                             )
@@ -2611,6 +2892,17 @@
                         isOpen: isTutorialOpen,
                         onClose: () => handleToggleTutorial(false)
                     }),
+                    previewImageUrl && React.createElement('div', {
+                        onClick: (e) => setPreviewImageUrl(null),
+                        className: 'fixed inset-0 bg-black/70 z-[101] flex items-center justify-center p-4 backdrop-blur-sm cursor-pointer'
+                    }, 
+                        React.createElement('img', { 
+                            src: previewImageUrl, 
+                            alt: 'Image preview', 
+                            className: 'max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-default',
+                            onClick: (e) => e.stopPropagation() // Prevent click on image from closing
+                        })
+                    ),
                     isPanelOpen && React.createElement('div', {
                         onClick: handleClosePanels,
                         className: 'fixed inset-0 bg-black/40 z-40 transition-opacity duration-300',
