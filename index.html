@@ -1236,6 +1236,28 @@
         };
         
         // --- From components/AssistantMessageRenderer.tsx ---
+        const CollapsibleSection = ({ title, children }) => {
+            const [isExpanded, setIsExpanded] = React.useState(false);
+            return React.createElement('div', { className: 'mb-3' },
+                React.createElement('button', { 
+                    className: 'text-sm font-medium flex items-center w-full text-left',
+                    onClick: () => setIsExpanded(!isExpanded)
+                },
+                    React.createElement('span', { 
+                        className: `details-arrow ${isExpanded ? 'expanded' : ''}` 
+                    }),
+                    React.createElement('span', { className: 'summary-text' }, title)
+                ),
+                React.createElement('div', { 
+                    className: `thinking-process-container ${isExpanded ? 'expanded' : ''}` 
+                },
+                    React.createElement('div', { className: 'thinking-process-content pt-3 mt-2 border-t border-dashed border-[var(--border-color)]' },
+                        children
+                    )
+                )
+            );
+        };
+
         const AssistantMessageRenderer = ({ markdown }) => {
             const { thinkingProcess, finalAnswer } = useMemo(() => {
                 const fullMarkdown = markdown || '';
@@ -1260,36 +1282,15 @@
             }, [markdown]);
 
             return React.createElement(React.Fragment, null,
-                thinkingProcess && (
-                    (() => {
-                        const [isExpanded, setIsExpanded] = React.useState(false);
-                        
-                        return React.createElement('div', { className: 'mb-3' },
-                            React.createElement('button', { 
-                                className: 'text-sm font-medium flex items-center w-full text-left',
-                                onClick: () => setIsExpanded(!isExpanded)
-                            },
-                                React.createElement('span', { 
-                                    className: `details-arrow ${isExpanded ? 'expanded' : ''}` 
-                                }),
-                                React.createElement('span', { className: 'summary-text' }, '查看思考过程')
-                            ),
-                            React.createElement('div', { 
-                                className: `thinking-process-container ${isExpanded ? 'expanded' : ''}` 
-                            },
-                                React.createElement('div', { className: 'thinking-process-content pt-3 mt-2 border-t border-dashed border-[var(--border-color)]' },
-                                    React.createElement(MarkdownRenderer, { markdown: thinkingProcess })
-                                )
-                            )
-                        );
-                    })()
+                thinkingProcess && React.createElement(CollapsibleSection, { title: '查看思考过程' },
+                    React.createElement(MarkdownRenderer, { markdown: thinkingProcess })
                 ),
                 React.createElement(MarkdownRenderer, { markdown: finalAnswer })
             );
         };
 
         // --- From components/MainContent.tsx ---
-        const MainContent = ({ conversation, isLoading, editingIndex, editedContent, setEditedContent, onSaveEdit, onCancelEdit, onStartEdit }) => {
+        const MainContent = ({ conversation, isLoading, editingIndex, editedContent, setEditedContent, onSaveEdit, onCancelEdit, onStartEdit, onSuggestionClick }) => {
             const chatContainerRef = useRef(null);
             const prevEditingIndex = useRef(null);
             const messageRefs = useRef(new Map());
@@ -1331,15 +1332,24 @@
             return React.createElement('div', { className: 'ios-card flex flex-col flex-grow min-h-0' },
                 React.createElement('div', { ref: chatContainerRef, className: 'flex-grow overflow-y-auto p-5 space-y-6' },
                     conversation.length === 0 ? (
-                        React.createElement('div', { className: 'text-center text-gray-500 flex flex-col justify-center items-center h-full' },
-                            React.createElement('div', { className: 'w-20 h-20 bg-gradient-to-br from-[var(--gradient-from)] to-[var(--gradient-to)] rounded-full mb-4 flex items-center justify-center shadow-lg' },
-                                React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 448 512', className: 'w-10 h-10 fill-white' },
-                                    React.createElement('path', { d: 'M448 80v48c0 44.2-100.3 80-224 80S0 172.2 0 128V80C0 35.8 100.3 0 224 0S448 35.8 448 80zM393.2 214.7c20.8-7.4 39.9-16.9 54.8-28.6V288c0 44.2-100.3 80-224 80S0 332.2 0 288V186.1c14.9 11.8 34 21.2 54.8 28.6C99.7 230.7 159.5 240 224 240s124.3-9.3 169.2-25.3zM448 368v48c0 44.2-100.3 80-224 80S0 460.2 0 416V368c0-17.5 13-32.9 31.5-41.2C86.2 344.3 152.6 352 224 352s137.8-7.7 192.5-25.2c18.5 8.3 31.5 23.7 31.5 41.2z' })
-                                )
+                         React.createElement('div', { className: 'text-center text-gray-500 flex flex-col h-full' },
+                            React.createElement('div', { className: 'flex-grow flex flex-col justify-center items-center' },
+                                React.createElement('div', { className: 'w-20 h-20 bg-gradient-to-br from-[var(--gradient-from)] to-[var(--gradient-to)] rounded-full mb-4 flex items-center justify-center shadow-lg' },
+                                    React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 448 512', className: 'w-10 h-10 fill-white' },
+                                        React.createElement('path', { d: 'M448 80v48c0 44.2-100.3 80-224 80S0 172.2 0 128V80C0 35.8 100.3 0 224 0S448 35.8 448 80zM393.2 214.7c20.8-7.4 39.9-16.9 54.8-28.6V288c0 44.2-100.3 80-224 80S0 332.2 0 288V186.1c14.9 11.8 34 21.2 54.8 28.6C99.7 230.7 159.5 240 224 240s124.3-9.3 169.2-25.3zM448 368v48c0 44.2-100.3 80-224 80S0 460.2 0 416V368c0-17.5 13-32.9 31.5-41.2C86.2 344.3 152.6 352 224 352s137.8-7.7 192.5-25.2c18.5 8.3 31.5 23.7 31.5 41.2z' })
+                                    )
+                                ),
+                                React.createElement('h3', { className: 'text-xl font-semibold mb-2' }, 'SQL 自动化编写助手'),
+                                React.createElement('p', null, '输入您的需求开始生成SQL。'),
+                                React.createElement('p', null, '您可以持续对话，对生成的SQL进行修改和完善。')
                             ),
-                            React.createElement('h3', { className: 'text-xl font-semibold mb-2' }, 'SQL 自动化编写助手'),
-                            React.createElement('p', null, '输入您的需求开始生成SQL。'),
-                            React.createElement('p', null, '您可以持续对话，对生成的SQL进行修改和完善。')
+                            React.createElement('div', { className: 'w-full max-w-3xl mx-auto pb-4' },
+                                React.createElement('div', { className: 'grid grid-cols-1 sm:grid-cols-3 gap-3' },
+                                    React.createElement('button', { onClick: () => onSuggestionClick('我要改写老数据库SQL代码'), className: 'ios-button ios-button-secondary text-sm h-auto p-3' }, '我要改写老数据库SQL代码'),
+                                    React.createElement('button', { onClick: () => onSuggestionClick('我要SQL代码纠错'), className: 'ios-button ios-button-secondary text-sm h-auto p-3' }, '我要SQL代码纠错'),
+                                    React.createElement('button', { onClick: () => onSuggestionClick('我要描述业务需求写新代码'), className: 'ios-button ios-button-secondary text-sm h-auto p-3' }, '我要描述业务需求写新代码')
+                                )
+                            )
                         )
                     ) : (
                         conversation.map((msg, index) => {
@@ -1736,6 +1746,41 @@
                 )
             );
         };
+        
+        const HistoryItem = ({ item, index, total, onLoadConversation, onDeleteItem }) => {
+            const [isExpanded, setIsExpanded] = React.useState(false);
+            const initialRequest = item.conversation.find(m => m.role === 'user')?.content || '无初始请求';
+            const finalSql = [...item.conversation].reverse().find(m => m.role === 'assistant' && !m.isError)?.content?.match(/```(?:sql)?\n([\s\S]+?)```/g)?.pop()?.replace(/```(?:sql)?\n|\n```/g, '') || '无有效 SQL';
+        
+            return React.createElement('div', { key: item.time, className: 'ios-card p-4 mb-3' },
+                React.createElement('div', { className: 'flex items-start justify-between gap-3' },
+                    React.createElement('div', { className: 'flex-1' },
+                        React.createElement('div', { className: 'text-xs text-[var(--accent-color)]' }, `#${total - index} · ${new Date(item.time).toLocaleString()}`),
+                        React.createElement('div', { className: 'mt-1 text-sm' }, React.createElement('span', {className: 'font-semibold'}, '初始需求：'), initialRequest.slice(0, 200) + (initialRequest.length > 200 ? '...' : ''))
+                    )
+                ),
+                React.createElement('div', { className: 'mt-2' },
+                    React.createElement('button', { 
+                        className: 'text-sm font-medium flex items-center w-full text-left',
+                        onClick: () => setIsExpanded(!isExpanded)
+                    },
+                        React.createElement('span', { 
+                            className: `details-arrow ${isExpanded ? 'expanded' : ''}` 
+                        }),
+                        React.createElement('span', { className: 'summary-text' }, '查看最终 SQL')
+                    ),
+                    React.createElement('div', { 
+                        className: `sql-preview-container ${isExpanded ? 'expanded' : ''}` 
+                    },
+                        React.createElement(CodeBlockWithCopy, { code: finalSql })
+                    )
+                ),
+                React.createElement('div', { className: 'mt-3 flex gap-2 items-stretch' },
+                    React.createElement('button', { onClick: () => onLoadConversation(item.conversation, item.time), className: 'ios-button text-sm px-4 py-2 flex-1' }, '加载对话'),
+                    React.createElement('button', { onClick: () => onDeleteItem(item.time), className: 'ios-button danger text-sm px-4 py-2 flex-1' }, '删除对话')
+                )
+            );
+        };
 
         const HistoryPanel = ({ isOpen, onClose, history, setHistory, onLoadConversation }) => {
             const importFileRef = useRef(null);
@@ -1802,43 +1847,14 @@
                         history.length === 0 ? (
                             React.createElement('p', { className: 'text-sm text-gray-500' }, '暂无历史记录。')
                         ) : (
-                            history.map((h, idx) => {
-                                const initialRequest = h.conversation.find(m => m.role === 'user')?.content || '无初始请求';
-                                const finalSql = [...h.conversation].reverse().find(m => m.role === 'assistant' && !m.isError)?.content?.match(/```(?:sql)?\n([\s\S]+?)```/g)?.pop()?.replace(/```(?:sql)?\n|\n```/g, '') || '无有效 SQL';
-
-                                return React.createElement('div', { key: h.time, className: 'ios-card p-4 mb-3' },
-                                    React.createElement('div', { className: 'flex items-start justify-between gap-3' },
-                                        React.createElement('div', { className: 'flex-1' },
-                                            React.createElement('div', { className: 'text-xs text-[var(--accent-color)]' }, `#${history.length - idx} · ${new Date(h.time).toLocaleString()}`),
-                                            React.createElement('div', { className: 'mt-1 text-sm' }, React.createElement('span', {className: 'font-semibold'}, '初始需求：'), initialRequest.slice(0, 200) + (initialRequest.length > 200 ? '...' : ''))
-                                        )
-                                    ),
-                                    (() => {
-                                        const [isExpanded, setIsExpanded] = React.useState(false);
-                                        
-                                        return React.createElement('div', { className: 'mt-2' },
-                                            React.createElement('button', { 
-                                                className: 'text-sm font-medium flex items-center w-full text-left',
-                                                onClick: () => setIsExpanded(!isExpanded)
-                                            },
-                                                React.createElement('span', { 
-                                                    className: `details-arrow ${isExpanded ? 'expanded' : ''}` 
-                                                }),
-                                                React.createElement('span', { className: 'summary-text' }, '查看最终 SQL')
-                                            ),
-                                            React.createElement('div', { 
-                                                className: `sql-preview-container ${isExpanded ? 'expanded' : ''}` 
-                                            },
-                                                React.createElement(CodeBlockWithCopy, { code: finalSql })
-                                            )
-                                        );
-                                    })(),
-                                    React.createElement('div', { className: 'mt-3 flex gap-2 items-stretch' },
-                                        React.createElement('button', { onClick: () => loadConversation(h.conversation, h.time), className: 'ios-button text-sm px-4 py-2 flex-1' }, '加载对话'),
-                                        React.createElement('button', { onClick: () => deleteItem(h.time), className: 'ios-button danger text-sm px-4 py-2 flex-1' }, '删除对话')
-                                    )
-                                );
-                            })
+                            history.map((h, idx) => React.createElement(HistoryItem, {
+                                key: h.time,
+                                item: h,
+                                index: idx,
+                                total: history.length,
+                                onLoadConversation: loadConversation,
+                                onDeleteItem: deleteItem
+                            }))
                         )
                     ),
                     React.createElement('div', { className: 'p-4 border-t border-[var(--border-color)] flex-shrink-0 bg-[var(--card-bg)]' },
@@ -2039,38 +2055,45 @@
                     const newConversation = typeof newConversationOrUpdater === 'function'
                         ? newConversationOrUpdater(prevConversation)
                         : newConversationOrUpdater;
-
-                    if (newConversation.length === 0 || !newConversation.some(m => m.role === 'user')) {
-                        return newConversation;
-                    }
-                    
-                    const lastMessage = newConversation[newConversation.length - 1];
-                    if (lastMessage && lastMessage.isStreaming) {
-                        return newConversation;
-                    }
-
-                    setActiveHistoryId(prevId => {
-                        let currentId = prevId;
-                        if (currentId) {
-                            setHistory(prevHistory => {
-                                const exists = prevHistory.some(item => item.time === currentId);
-                                if (exists) {
-                                    return prevHistory.map(item => item.time === currentId ? { ...item, conversation: newConversation } : item);
-                                } else {
-                                    currentId = Date.now();
-                                    return [{ conversation: newConversation, time: currentId }, ...prevHistory].slice(0, 10);
-                                }
-                            });
-                        } else {
-                            currentId = Date.now();
-                            setHistory(prevHistory => [{ conversation: newConversation, time: currentId }, ...prevHistory].slice(0, 10));
-                        }
-                        return currentId;
-                    });
-                    
+            
                     return newConversation;
                 });
-            }, [_setConversation, setHistory]);
+            }, [_setConversation]);
+
+            const saveConversationToHistory = useCallback((conversation) => {
+                if (conversation.length === 0 || !conversation.some(m => m.role === 'user')) {
+                    return;
+                }
+                
+                const lastMessage = conversation[conversation.length - 1];
+                if (lastMessage && lastMessage.isStreaming) {
+                    return;
+                }
+            
+                setActiveHistoryId(prevId => {
+                    let currentId = prevId;
+                    if (currentId) {
+                        setHistory(prevHistory => {
+                            const exists = prevHistory.some(item => item.time === currentId);
+                            if (exists) {
+                                return prevHistory.map(item => item.time === currentId ? 
+                                    { ...item, conversation: conversation } : item);
+                            } else {
+                                currentId = Date.now();
+                                return [{ conversation: conversation, time: currentId }, ...prevHistory].slice(0, 10);
+                            }
+                        });
+                    } else {
+                        currentId = Date.now();
+                        setHistory(prevHistory => [{ conversation: conversation, time: currentId }, ...prevHistory].slice(0, 10));
+                    }
+                    return currentId;
+                });
+            }, [setHistory]);
+
+            useEffect(() => {
+                saveConversationToHistory(conversation);
+            }, [conversation, saveConversationToHistory]);
 
             useEffect(() => {
                 if (theme === 'dark') {
@@ -2145,68 +2168,80 @@
             }, [_setConversation]);
 
             const runGeneration = useCallback(async (chatHistoryForApi, isRegeneration = false, regenerationIndex = -1) => {
-                const activeSettings = activeProfile.settings;
-                if (!activeSettings.apiUrl || !activeSettings.apiKey) {
-                    alert('请先在设置中配置API！');
-                    handleToggleSettings(true);
-                    return;
+                try {
+                    const activeSettings = activeProfile.settings;
+                    if (!activeSettings.apiUrl || !activeSettings.apiKey) {
+                        alert('请先在设置中配置API！');
+                        handleToggleSettings(true);
+                        return;
+                    }
+                    
+                    setIsLoading(true);
+                    abortControllerRef.current = new AbortController();
+            
+                    const baseUpdater = (prev) => {
+                        const conversationSlice = isRegeneration ? prev.slice(0, regenerationIndex + 1) : prev;
+                        return [...conversationSlice, { role: 'assistant', content: '', isStreaming: true }];
+                    };
+                    isRegeneration ? _setConversation(baseUpdater) : setConversation(baseUpdater);
+                    
+                    const onChunk = (chunk) => {
+                        _setConversation(prev => {
+                            const lastMessage = prev[prev.length - 1];
+                            if (lastMessage && lastMessage.role === 'assistant') {
+                                const updatedLastMessage = { ...lastMessage, content: lastMessage.content + chunk };
+                                return [...prev.slice(0, -1), updatedLastMessage];
+                            }
+                            return prev;
+                        });
+                    };
+                    
+                    const onComplete = () => {
+                        setConversation(prev => {
+                            const lastMessage = prev[prev.length - 1];
+                            if (lastMessage && lastMessage.role === 'assistant') {
+                                return [...prev.slice(0, -1), { ...lastMessage, isStreaming: false }];
+                            }
+                            return prev;
+                        });
+                        setIsLoading(false);
+                        abortControllerRef.current = null;
+                    };
+            
+                    const onError = (error) => {
+                        setConversation(prev => {
+                            const lastMessage = prev[prev.length - 1];
+                            const isAbort = error instanceof Error && error.name === 'AbortError';
+                            const content = isAbort ? '-- 生成已手动停止 --' : `-- 生成 SQL 时出错 --\n${error.message}`;
+                    
+                            if (lastMessage && lastMessage.role === 'assistant') {
+                                 return [...prev.slice(0, -1), { ...lastMessage, content: (lastMessage.content || '') + `\n\n${content}`, isError: true, isStreaming: false }];
+                            }
+                            return [...prev, { role: 'assistant', content, isError: true, isStreaming: false }];
+                        });
+                        setIsLoading(false);
+                        abortControllerRef.current = null;
+                    };
+            
+                    await generateSqlStream(
+                        chatHistoryForApi,
+                        activeSettings,
+                        abortControllerRef.current.signal,
+                        onChunk,
+                        onComplete,
+                        onError
+                    );
+                } catch (error) {
+                    console.error('Error in runGeneration:', error);
+                    setIsLoading(false);
+                    abortControllerRef.current = null;
+                    setConversation(prev => [...prev, { 
+                        role: 'assistant', 
+                        content: `抱歉，处理请求时出现了错误：${error.message}`, 
+                        isError: true, 
+                        isStreaming: false 
+                    }]);
                 }
-                
-                setIsLoading(true);
-                abortControllerRef.current = new AbortController();
-
-                const baseUpdater = (prev) => {
-                    const conversationSlice = isRegeneration ? prev.slice(0, regenerationIndex + 1) : prev;
-                    return [...conversationSlice, { role: 'assistant', content: '', isStreaming: true }];
-                };
-                isRegeneration ? _setConversation(baseUpdater) : setConversation(baseUpdater);
-                
-                const onChunk = (chunk) => {
-                    _setConversation(prev => {
-                        const lastMessage = prev[prev.length - 1];
-                        if (lastMessage && lastMessage.role === 'assistant') {
-                            const updatedLastMessage = { ...lastMessage, content: lastMessage.content + chunk };
-                            return [...prev.slice(0, -1), updatedLastMessage];
-                        }
-                        return prev;
-                    });
-                };
-                
-                const onComplete = () => {
-                    setConversation(prev => {
-                        const lastMessage = prev[prev.length - 1];
-                        if (lastMessage && lastMessage.role === 'assistant') {
-                            return [...prev.slice(0, -1), { ...lastMessage, isStreaming: false }];
-                        }
-                        return prev;
-                    });
-                    setIsLoading(false);
-                    abortControllerRef.current = null;
-                };
-
-                const onError = (error) => {
-                    setConversation(prev => {
-                        const lastMessage = prev[prev.length - 1];
-                        const isAbort = error instanceof Error && error.name === 'AbortError';
-                        const content = isAbort ? '-- 生成已手动停止 --' : `-- 生成 SQL 时出错 --\n${error.message}`;
-                
-                        if (lastMessage && lastMessage.role === 'assistant') {
-                             return [...prev.slice(0, -1), { ...lastMessage, content: (lastMessage.content || '') + `\n\n${content}`, isError: true, isStreaming: false }];
-                        }
-                        return [...prev, { role: 'assistant', content, isError: true, isStreaming: false }];
-                    });
-                    setIsLoading(false);
-                    abortControllerRef.current = null;
-                };
-
-                await generateSqlStream(
-                    chatHistoryForApi,
-                    activeSettings,
-                    abortControllerRef.current.signal,
-                    onChunk,
-                    onComplete,
-                    onError
-                );
             }, [activeProfile, _setConversation, setConversation]);
 
             const handleSendMessage = useCallback(async () => {
@@ -2251,6 +2286,29 @@
                 setEditedContent('');
             }, [editingIndex, editedContent, conversation, setConversation]);
             
+            const handleSuggestionClick = useCallback(async (prompt) => {
+                const trimmedQuery = prompt.trim();
+                if (!trimmedQuery || isLoading) return;
+            
+                try {
+                    const userMessage = { role: 'user', content: trimmedQuery };
+                    const chatHistoryForApi = [userMessage];
+                    
+                    setConversation(chatHistoryForApi);
+                    setUserQuery('');
+            
+                    await runGeneration(chatHistoryForApi, false);
+                } catch (error) {
+                    console.error('Error in handleSuggestionClick:', error);
+                    setConversation(prev => [...prev, { 
+                        role: 'assistant', 
+                        content: '抱歉，处理您的请求时出现了错误。请重试或检查设置。', 
+                        isError: true, 
+                        isStreaming: false 
+                    }]);
+                }
+            }, [isLoading, setConversation, runGeneration]);
+
             const handleRegenerateLastResponse = useCallback(async () => {
                 let lastUserMessageIndex = -1;
                 for (let i = conversation.length - 1; i >= 0; i--) {
@@ -2380,7 +2438,8 @@
                             setEditedContent: setEditedContent,
                             onSaveEdit: handleSaveEdit,
                             onCancelEdit: handleCancelEdit,
-                            onStartEdit: handleStartEdit
+                            onStartEdit: handleStartEdit,
+                            onSuggestionClick: handleSuggestionClick
                         })
                     ),
                     React.createElement('div', { className: 'flex-shrink-0 bg-transparent z-10' },
