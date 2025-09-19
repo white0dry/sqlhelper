@@ -1552,6 +1552,44 @@
         };
         
         // --- From components/HistoryPanel.tsx ---
+        const CodeBlockWithCopy = ({ code }) => {
+            const { useState } = React;
+            const [copyText, setCopyText] = useState('复制');
+            
+            const handleCopy = () => {
+                if (!code || code === '无有效 SQL') {
+                    setCopyText('无内容');
+                    setTimeout(() => setCopyText('复制'), 2000);
+                    return;
+                }
+                navigator.clipboard.writeText(code).then(() => {
+                    setCopyText('已复制!');
+                    setTimeout(() => setCopyText('复制'), 2000);
+                }).catch(err => {
+                    setCopyText('失败!');
+                    console.error('Failed to copy code: ', err);
+                    setTimeout(() => setCopyText('复制'), 2000);
+                });
+            };
+
+            const icon = copyText === '已复制!' 
+                ? React.createElement('i', { className: 'fa-solid fa-check mr-1' })
+                : React.createElement('i', { className: 'fa-regular fa-clipboard mr-1' });
+
+            return React.createElement('div', { className: 'relative' },
+                React.createElement('button', {
+                    onClick: handleCopy,
+                    className: 'copy-code-button ios-button ios-button-secondary text-sm font-semibold py-1 px-3 absolute top-2 right-2 z-10'
+                }, 
+                    icon,
+                    ` ${copyText}`
+                ),
+                React.createElement('pre', {
+                    className: 'mt-2 p-3 pt-12 bg-gray-800 text-white rounded-lg overflow-auto mono text-xs'
+                }, code)
+            );
+        };
+
         const HistoryPanel = ({ isOpen, onClose, history, setHistory, onLoadConversation }) => {
             const importFileRef = useRef(null);
 
@@ -1564,15 +1602,6 @@
             const deleteItem = (timestamp) => {
                 if (window.confirm('确定删除这条历史记录吗？')) {
                     setHistory(prev => prev.filter(item => item.time !== timestamp));
-                }
-            };
-            
-            const copySql = (conversation) => {
-                const finalSql = [...conversation].reverse().find(m => m.role === 'assistant' && !m.isError)?.content?.match(/```(?:sql)?\n([\s\S]+?)```/g)?.pop()?.replace(/```(?:sql)?\n|\n```/g, '') || '无有效 SQL';
-                if (finalSql && finalSql !== '无有效 SQL') {
-                    navigator.clipboard.writeText(finalSql).then(() => alert('最终的 SQL 已复制到剪贴板')).catch(() => alert('复制失败'));
-                } else {
-                    alert('此对话中没有找到有效的 SQL。');
                 }
             };
 
@@ -1635,18 +1664,17 @@
                                         React.createElement('div', { className: 'flex-1' },
                                             React.createElement('div', { className: 'text-xs text-[var(--accent-color)]' }, `#${history.length - idx} · ${new Date(h.time).toLocaleString()}`),
                                             React.createElement('div', { className: 'mt-1 text-sm' }, React.createElement('span', {className: 'font-semibold'}, '初始需求：'), initialRequest.slice(0, 200) + (initialRequest.length > 200 ? '...' : ''))
-                                        ),
-                                        React.createElement('button', { onClick: () => loadConversation(h.conversation, h.time), className: 'ios-button text-sm px-4 py-2 whitespace-nowrap' }, '加载')
+                                        )
                                     ),
                                     React.createElement('details', { className: 'mt-2' },
                                         React.createElement('summary', { className: 'text-sm font-medium flex items-center' }, 
                                             React.createElement('span', { className: 'details-arrow' }),
                                             React.createElement('span', { className: 'summary-text' }, '查看最终 SQL')
                                         ),
-                                        React.createElement('pre', { className: 'mt-2 p-3 bg-gray-800 text-white rounded-lg overflow-auto mono text-xs' }, finalSql)
+                                        React.createElement(CodeBlockWithCopy, { code: finalSql })
                                     ),
                                     React.createElement('div', { className: 'mt-3 flex gap-2 items-stretch' },
-                                        React.createElement('button', { onClick: () => copySql(h.conversation), className: 'ios-button ios-button-secondary text-sm px-4 py-2' }, '复制SQL'),
+                                        React.createElement('button', { onClick: () => loadConversation(h.conversation, h.time), className: 'ios-button ios-button-secondary text-sm px-4 py-2' }, '加载对话'),
                                         React.createElement('button', { onClick: () => deleteItem(h.time), className: 'ios-button danger text-sm px-4 py-2' }, '删除对话')
                                     )
                                 );
