@@ -1042,19 +1042,21 @@
                     if (messageElement) {
                         messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
-                } 
+                }
                 // Case 2: An edit session is ending. Do nothing to preserve scroll position.
                 else if (prevEditingIndex.current !== null && editingIndex === null) {
                     // Intentionally do nothing to keep the viewport stable.
-                } 
+                }
                 // Case 3: Not in an edit session. This covers initial load, history load, and new messages.
                 else if (editingIndex === null) {
-                    // Use scrollIntoView on the last message element for robust scrolling.
-                    if (chatContainer.lastElementChild) {
-                        chatContainer.lastElementChild.scrollIntoView({ behavior: 'auto', block: 'end' });
-                    }
+                    // Use a timeout to ensure rendering is complete before scrolling.
+                    setTimeout(() => {
+                        if (chatContainer?.lastElementChild) {
+                            chatContainer.lastElementChild.scrollIntoView({ behavior: 'auto', block: 'end' });
+                        }
+                    }, 0);
                 }
-                
+
                 // Always update the ref for the next render.
                 prevEditingIndex.current = editingIndex;
 
@@ -1669,8 +1671,9 @@
                 }).join(' ');
 
                 const overrideConsole = (level) => {
+                    const originalMethod = window.console[level];
                     window.console[level] = (...args) => {
-                        originalConsole[level](...args);
+                        originalMethod.apply(window.console, args); // Preserve 'this' context
                         setConsoleLogs(prevLogs => [
                             ...prevLogs,
                             {
@@ -1682,10 +1685,13 @@
                     };
                 };
 
-                ['log', 'warn', 'error', 'info'].forEach(overrideConsole);
+                const levels = ['log', 'warn', 'error', 'info'];
+                levels.forEach(overrideConsole);
 
                 return () => {
-                    window.console = originalConsole; // Cleanup
+                    levels.forEach(level => {
+                        window.console[level] = originalConsole[level];
+                    });
                 };
             }, []);
 
