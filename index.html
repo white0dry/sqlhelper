@@ -540,21 +540,15 @@
             justify-content: center;
             box-sizing: border-box;
         }
+
         /* Collapsible "Thinking Process" styles */
-        details > summary {
-            list-style: none;
-            cursor: pointer;
-        }
-        details > summary::-webkit-details-marker {
-            display: none;
-        }
         .summary-text {
             color: var(--text-secondary);
         }
         .app-mounted .summary-text {
             transition: color 0.2s;
         }
-        summary:hover .summary-text {
+        button:hover .summary-text {
             color: var(--accent-color);
         }
         .details-arrow {
@@ -570,12 +564,25 @@
         .app-mounted .details-arrow {
             transition: transform 0.3s ease-in-out;
         }
-        summary:hover .details-arrow {
-             color: var(--accent-color);
+        button:hover .details-arrow {
+            color: var(--accent-color);
         }
-        details[open] .details-arrow {
+        .details-arrow.expanded {
             transform: rotate(90deg);
         }
+
+        /* 思维过程动画容器 */
+        .thinking-process-container {
+            max-height: 0;
+            overflow: hidden;
+        }
+        .app-mounted .thinking-process-container {
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .thinking-process-container.expanded {
+            max-height: 2000px; /* 足够大的值来容纳内容 */
+        }
+
         .thinking-process-content {
             position: relative;
             padding-left: 1.25rem;
@@ -589,6 +596,17 @@
             width: 3px;
             background: linear-gradient(to bottom, var(--gradient-from), var(--gradient-to));
             border-radius: 999px;
+        }
+        /* SQL 预览动画容器 */
+        .sql-preview-container {
+            max-height: 0;
+            overflow: hidden;
+        }
+        .app-mounted .sql-preview-container {
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sql-preview-container.expanded {
+            max-height: 1000px; /* 足够大的值来容纳SQL代码 */
         }
 
         /* Mobile Optimizations */
@@ -1214,15 +1232,28 @@
 
             return React.createElement(React.Fragment, null,
                 thinkingProcess && (
-                    React.createElement('details', { className: 'mb-3' },
-                        React.createElement('summary', { className: 'text-sm font-medium flex items-center' },
-                            React.createElement('span', { className: 'details-arrow' }),
-                            React.createElement('span', { className: 'summary-text' }, '查看思考过程')
-                        ),
-                        React.createElement('div', { className: 'thinking-process-content pt-3 mt-2 border-t border-dashed border-[var(--border-color)]' },
-                            React.createElement(MarkdownRenderer, { markdown: thinkingProcess })
-                        )
-                    )
+                    (() => {
+                        const [isExpanded, setIsExpanded] = React.useState(false);
+                        
+                        return React.createElement('div', { className: 'mb-3' },
+                            React.createElement('button', { 
+                                className: 'text-sm font-medium flex items-center w-full text-left',
+                                onClick: () => setIsExpanded(!isExpanded)
+                            },
+                                React.createElement('span', { 
+                                    className: `details-arrow ${isExpanded ? 'expanded' : ''}` 
+                                }),
+                                React.createElement('span', { className: 'summary-text' }, '查看思考过程')
+                            ),
+                            React.createElement('div', { 
+                                className: `thinking-process-container ${isExpanded ? 'expanded' : ''}` 
+                            },
+                                React.createElement('div', { className: 'thinking-process-content pt-3 mt-2 border-t border-dashed border-[var(--border-color)]' },
+                                    React.createElement(MarkdownRenderer, { markdown: thinkingProcess })
+                                )
+                            )
+                        );
+                    })()
                 ),
                 React.createElement(MarkdownRenderer, { markdown: finalAnswer })
             );
@@ -1738,17 +1769,30 @@
                                             React.createElement('div', { className: 'mt-1 text-sm' }, React.createElement('span', {className: 'font-semibold'}, '初始需求：'), initialRequest.slice(0, 200) + (initialRequest.length > 200 ? '...' : ''))
                                         )
                                     ),
-                                    React.createElement('details', { className: 'mt-2' },
-                                        React.createElement('summary', { className: 'text-sm font-medium flex items-center' }, 
-                                            React.createElement('span', { className: 'details-arrow' }),
-                                            React.createElement('span', { className: 'summary-text' }, '查看最终 SQL')
-                                        ),
-                                        React.createElement(CodeBlockWithCopy, { code: finalSql })
-                                    ),
-                                        React.createElement('div', { className: 'mt-3 flex gap-2 items-stretch' },
-                                            React.createElement('button', { onClick: () => loadConversation(h.conversation, h.time), className: 'ios-button text-sm px-4 py-2 flex-1' }, '加载对话'),
-                                            React.createElement('button', { onClick: () => deleteItem(h.time), className: 'ios-button danger text-sm px-4 py-2 flex-1' }, '删除对话')
-                                        )
+                                    (() => {
+                                        const [isExpanded, setIsExpanded] = React.useState(false);
+                                        
+                                        return React.createElement('div', { className: 'mt-2' },
+                                            React.createElement('button', { 
+                                                className: 'text-sm font-medium flex items-center w-full text-left',
+                                                onClick: () => setIsExpanded(!isExpanded)
+                                            },
+                                                React.createElement('span', { 
+                                                    className: `details-arrow ${isExpanded ? 'expanded' : ''}` 
+                                                }),
+                                                React.createElement('span', { className: 'summary-text' }, '查看最终 SQL')
+                                            ),
+                                            React.createElement('div', { 
+                                                className: `sql-preview-container ${isExpanded ? 'expanded' : ''}` 
+                                            },
+                                                React.createElement(CodeBlockWithCopy, { code: finalSql })
+                                            )
+                                        );
+                                    })(),
+                                    React.createElement('div', { className: 'mt-3 flex gap-2 items-stretch' },
+                                        React.createElement('button', { onClick: () => loadConversation(h.conversation, h.time), className: 'ios-button text-sm px-4 py-2 flex-1' }, '加载对话'),
+                                        React.createElement('button', { onClick: () => deleteItem(h.time), className: 'ios-button danger text-sm px-4 py-2 flex-1' }, '删除对话')
+                                    )
                                 );
                             })
                         )
@@ -1766,7 +1810,7 @@
                 )
             );
         };
-        
+
         // --- From components/ConsolePanel.tsx ---
         const ConsolePanel = ({ isOpen, onClose, logs, onClearLogs }) => {
             const logsContainerRef = useRef(null);
