@@ -1225,7 +1225,7 @@
             { key: 'terminology', label: '4. 行业术语定义 (Terminology)', description: 'AI将根据这些定义理解特定的业务术语', placeholder: '输入行业术语及其定义...\n例如：\n术语:\n  KPI: 关键绩效指标' },
         ];
 
-        const SettingsPanel = ({ isOpen, onClose, activeProfile, profiles, onSave, onSwitch, onCreate, onDelete, onRename, onExport, onClearAll, onShowToast }) => {
+        const SettingsPanel = ({ isOpen, onClose, activeProfile, profiles, onSave, onSwitch, onCreate, onDelete, onRename, onExport, onShowToast }) => {
             const [currentSettings, setCurrentSettings] = useState(activeProfile.settings);
             const [newProfileName, setNewProfileName] = useState('');
             const [isOptimizingField, setIsOptimizingField] = useState(null);
@@ -1242,6 +1242,13 @@
             const handleChange = (e) => {
                 const { name, value } = e.target;
                 setCurrentSettings(prev => ({ ...prev, [name]: value }));
+            };
+            
+            const handleResetCurrentSettings = () => {
+                if (window.confirm('确定要将当前表单中的所有配置信息重置为默认值吗？此操作不会影响已保存的配置。')) {
+                    setCurrentSettings(DEFAULT_SETTINGS);
+                    onShowToast('表单已重置为默认值。');
+                }
             };
 
             const handleFileChange = async (e, key) => {
@@ -1387,12 +1394,12 @@
                                     React.createElement('div', { className: 'space-y-3' },
                                         React.createElement('div', null,
                                             React.createElement('label', { htmlFor: 'profile-select', className: 'block text-sm font-medium text-gray-700 mb-1' }, '当前配置'),
-                                            React.createElement('select', { id: 'profile-select', value: activeProfile.id, onChange: (e) => onSwitch(e.target.value), className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' },
+                                            React.createElement('select', { id: 'profile-select', value: activeProfile.id, onChange: (e) => onSwitch(e.target.value), className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base h-11' },
                                                 profiles.map(p => React.createElement('option', { key: p.id, value: p.id }, p.name))
                                             )
                                         ),
                                         React.createElement('div', { className: 'flex gap-2' },
-                                            React.createElement('input', { type: 'text', value: newProfileName, onChange: (e) => setNewProfileName(e.target.value), placeholder: '新配置名称', className: 'flex-grow p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' }),
+                                            React.createElement('input', { type: 'text', value: newProfileName, onChange: (e) => setNewProfileName(e.target.value), placeholder: '新配置名称', className: 'flex-grow p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base h-11' }),
                                             React.createElement('button', { onClick: handleSaveNewProfile, className: 'ios-button ios-button-secondary text-sm px-3 py-1' }, '创建')
                                         ),
                                         React.createElement('div', { className: 'grid grid-cols-2 gap-2'},
@@ -1457,7 +1464,7 @@
                         React.createElement('div', { className: 'p-4 border-t border-[var(--border-color)] flex-shrink-0 bg-[var(--card-bg)]' },
                             React.createElement('div', { className: 'mx-auto grid gap-2' },
                                 React.createElement('button', { onClick: () => onSave(currentSettings), className: 'ios-button w-full' }, '保存设置'),
-                                React.createElement('button', { onClick: onClearAll, className: 'ios-button danger w-full' }, '清除所有数据'),
+                                React.createElement('button', { onClick: handleResetCurrentSettings, className: 'ios-button danger w-full' }, '清除配置信息'),
                                 React.createElement('div', { className: 'grid grid-cols-2 gap-2' },
                                     React.createElement('button', { onClick: onExport, className: 'ios-button ios-button-secondary w-full' }, '导出设置'),
                                     React.createElement('button', { onClick: () => importFileRef.current?.click(), className: 'ios-button ios-button-secondary w-full' }, '导入设置'),
@@ -1722,6 +1729,10 @@
             const [editingIndex, setEditingIndex] = useState(null);
             const [editedContent, setEditedContent] = useState('');
             const abortControllerRef = useRef(null);
+
+            const isLastMessageFromUser = useMemo(() => {
+                return conversation.length > 0 && conversation[conversation.length - 1].role === 'user';
+            }, [conversation]);
             
             useEffect(() => {
                 const originalConsole = { ...window.console };
@@ -1942,24 +1953,29 @@
 
             const handleSendMessage = useCallback(async () => {
                 const trimmedQuery = userQuery.trim();
-                if (!trimmedQuery) {
+                let chatHistoryForApi;
+
+                if (trimmedQuery) {
+                    const userMessage = { role: 'user', content: trimmedQuery };
+                    chatHistoryForApi = [...conversation, userMessage];
+                    setConversation(chatHistoryForApi);
+                    setUserQuery('');
+                    
+                    const textarea = document.getElementById('user-query');
+                    if (textarea) {
+                        textarea.style.height = 'auto';
+                        const isMobile = window.innerWidth <= 768;
+                        textarea.style.height = isMobile ? '80px' : '44px';
+                    }
+                } else if (isLastMessageFromUser) {
+                    chatHistoryForApi = conversation;
+                } else {
                     alert('请输入您的需求！');
                     return;
                 }
-                const userMessage = { role: 'user', content: trimmedQuery };
-                const newConversation = [...conversation, userMessage];
-                setConversation(newConversation);
-                setUserQuery('');
                 
-                const textarea = document.getElementById('user-query');
-                if (textarea) {
-                    textarea.style.height = 'auto';
-                    const isMobile = window.innerWidth <= 768;
-                    textarea.style.height = isMobile ? '80px' : '44px';
-                }
-                
-                await runGeneration(newConversation, false);
-            }, [userQuery, conversation, setConversation, runGeneration]);
+                await runGeneration(chatHistoryForApi, false);
+            }, [userQuery, conversation, setConversation, runGeneration, isLastMessageFromUser]);
 
             const handleSaveEdit = useCallback(() => {
                 if (editingIndex === null) return;
@@ -2068,18 +2084,6 @@
                 downloadAsJson(activeProfile.settings, `${activeProfile.name.replace(/\s/g, '_')}.json`);
             };
 
-            const handleClearAllData = () => {
-                if (window.confirm('确定要清除所有配置和历史记录吗？此操作无法撤销。')) {
-                    setProfiles([DEFAULT_PROFILE]);
-                    setActiveProfileId(DEFAULT_PROFILE.id);
-                    setHistory([]);
-                    _setConversation([]);
-                    setActiveHistoryId(null);
-                    setConsoleLogs([]);
-                    alert('所有数据已清除！');
-                }
-            };
-
             useEffect(() => {
                 if (!profiles || profiles.length === 0) {
                     setProfiles([DEFAULT_PROFILE]);
@@ -2144,12 +2148,12 @@
                                         : React.createElement('div', { className: 'input-area-buttons-container flex items-center gap-2 flex-shrink-0' },
                                             React.createElement('button', {
                                                 onClick: handleSendMessage,
-                                                disabled: !userQuery.trim() || editingIndex !== null,
+                                                disabled: (!userQuery.trim() && !isLastMessageFromUser) || editingIndex !== null,
                                                 className: 'ios-button p-3 h-11 order-first'
                                             }, React.createElement(SendIcon)),
                                             React.createElement('button', {
                                                 onClick: handleRegenerateLastResponse,
-                                                disabled: editingIndex !== null || !conversation.some(msg => msg.role === 'assistant'),
+                                                disabled: editingIndex !== null || !conversation.some(msg => msg.role === 'user'),
                                                 className: 'ios-button ios-button-secondary p-3 h-11',
                                                 'aria-label': '重新生成'
                                             }, React.createElement(RegenerateIcon))
@@ -2169,7 +2173,6 @@
                         onDelete: handleDeleteProfile,
                         onRename: handleRenameProfile,
                         onExport: handleExportProfile,
-                        onClearAll: handleClearAllData,
                         onShowToast: showToast
                     }),
                     React.createElement(HistoryPanel, {
