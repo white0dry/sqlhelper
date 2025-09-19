@@ -1400,11 +1400,11 @@
                                         ),
                                         React.createElement('div', { className: 'flex gap-2' },
                                             React.createElement('input', { type: 'text', value: newProfileName, onChange: (e) => setNewProfileName(e.target.value), placeholder: '新配置名称', className: 'flex-grow p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base h-11' }),
-                                            React.createElement('button', { onClick: handleSaveNewProfile, className: 'ios-button ios-button-secondary text-sm px-3 py-1' }, '创建')
+                                            React.createElement('button', { onClick: handleSaveNewProfile, className: 'ios-button ios-button-secondary px-3 h-11' }, '创建')
                                         ),
                                         React.createElement('div', { className: 'grid grid-cols-2 gap-2'},
-                                            React.createElement('button', { onClick: () => onRename(activeProfile.id), className: 'ios-button ios-button-secondary text-sm w-full py-2' }, '重命名当前配置'),
-                                            React.createElement('button', { onClick: () => onDelete(activeProfile.id), className: 'ios-button danger text-sm w-full py-2' }, '删除当前配置')
+                                            React.createElement('button', { onClick: () => onRename(activeProfile.id), className: 'ios-button ios-button-secondary w-full h-11' }, '重命名当前配置'),
+                                            React.createElement('button', { onClick: () => onDelete(activeProfile.id), className: 'ios-button danger w-full h-11' }, '删除当前配置')
                                         )
                                     )
                                 ),
@@ -1419,7 +1419,7 @@
                                             React.createElement('label', { htmlFor: 'apiKey', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'API Key'),
                                             React.createElement('input', { type: 'password', id: 'apiKey', name: 'apiKey', value: currentSettings.apiKey, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base', placeholder: 'Enter your API Key' })
                                         ),
-                                        React.createElement('button', { onClick: handleFetchModels, disabled: isFetchingModels || !currentSettings.apiUrl || !currentSettings.apiKey, className: 'ios-button ios-button-secondary w-full flex items-center justify-center gap-2' },
+                                        React.createElement('button', { onClick: handleFetchModels, disabled: isFetchingModels || !currentSettings.apiUrl || !currentSettings.apiKey, className: 'ios-button ios-button-secondary w-full flex items-center justify-center gap-2 h-11' },
                                             React.createElement('span', null, isFetchingModels ? '获取中...' : '获取可用模型'),
                                             isFetchingModels && React.createElement('div', { className: 'small-loader' })
                                         ),
@@ -1446,10 +1446,10 @@
                                         React.createElement('textarea', { id: key, name: key, value: currentSettings[key], onChange: handleChange, className: 'w-full border-2 border-[var(--border-color)] rounded-lg p-3 text-base resize-vertical min-h-[120px] bg-[var(--card-bg)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[var(--accent-color)]/20', placeholder: placeholder }),
                                         React.createElement('input', { type: 'file', id: `${key}-upload`, className: 'hidden', accept: '.txt,.md,.yaml,.yml,.sql', onChange: (e) => handleFileChange(e, key) }),
                                         React.createElement('div', { className: 'mt-3 grid grid-cols-2 gap-2' },
-                                            React.createElement('button', { onClick: () => document.getElementById(`${key}-upload`)?.click(), className: 'ios-button ios-button-secondary w-full' }, '上传文件'),
+                                            React.createElement('button', { onClick: () => document.getElementById(`${key}-upload`)?.click(), className: 'ios-button ios-button-secondary w-full h-11' }, '上传文件'),
                                             React.createElement('button', {
                                                 onClick: () => handleOptimizePrompt(key, null, (newContent) => setCurrentSettings(prev => ({...prev, [key]: newContent}))),
-                                                className: 'ios-button ios-button-secondary w-full flex items-center justify-center gap-2',
+                                                className: 'ios-button ios-button-secondary w-full flex items-center justify-center gap-2 h-11',
                                                 disabled: isOptimizingField !== null,
                                             },
                                                 isOptimizingField === key
@@ -1463,11 +1463,11 @@
                         ),
                         React.createElement('div', { className: 'p-4 border-t border-[var(--border-color)] flex-shrink-0 bg-[var(--card-bg)]' },
                             React.createElement('div', { className: 'mx-auto grid gap-2' },
-                                React.createElement('button', { onClick: () => onSave(currentSettings), className: 'ios-button w-full' }, '保存设置'),
-                                React.createElement('button', { onClick: handleResetCurrentSettings, className: 'ios-button danger w-full' }, '清除配置信息'),
+                                React.createElement('button', { onClick: () => onSave(currentSettings), className: 'ios-button w-full h-11' }, '保存设置'),
+                                React.createElement('button', { onClick: handleResetCurrentSettings, className: 'ios-button danger w-full h-11' }, '清除配置信息'),
                                 React.createElement('div', { className: 'grid grid-cols-2 gap-2' },
-                                    React.createElement('button', { onClick: onExport, className: 'ios-button ios-button-secondary w-full' }, '导出设置'),
-                                    React.createElement('button', { onClick: () => importFileRef.current?.click(), className: 'ios-button ios-button-secondary w-full' }, '导入设置'),
+                                    React.createElement('button', { onClick: onExport, className: 'ios-button ios-button-secondary w-full h-11' }, '导出设置'),
+                                    React.createElement('button', { onClick: () => importFileRef.current?.click(), className: 'ios-button ios-button-secondary w-full h-11' }, '导入设置'),
                                     React.createElement('input', { type: 'file', ref: importFileRef, onChange: handleImport, className: 'hidden', accept: '.json' })
                                 )
                             )
