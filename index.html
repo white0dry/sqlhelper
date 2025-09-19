@@ -1633,7 +1633,7 @@
                     alert('请输入新配置的名称。');
                     return;
                 }
-                onCreate(newProfileName.trim(), DEFAULT_SETTINGS);
+                onCreate(newProfileName.trim(), currentSettings);
                 setNewProfileName('');
             };
 
@@ -1742,13 +1742,19 @@
 
             const FullscreenEditor = ({ prompt, onSave, onClose, onOptimize, isOptimizing, onStopOptimize }) => {
                 const [content, setContent] = useState(prompt.content);
+                const [isSaved, setIsSaved] = useState(true);
+
+                useEffect(() => {
+                    setIsSaved(content === prompt.content);
+                }, [content, prompt.content]);
 
                 const handleSave = () => {
                     onSave(prompt.key, content);
+                    setIsSaved(true);
                 };
 
                 const handleOptimizeClick = () => {
-                    if (content !== prompt.content) {
+                    if (!isSaved) {
                         alert('请先点击确认修改');
                         return;
                     }
@@ -1761,7 +1767,7 @@
                             React.createElement('div', { className: 'flex justify-between items-center' },
                                 React.createElement('h2', { className: 'text-xl font-bold' }, `编辑: ${prompt.label}`),
                                 React.createElement('div', { className: 'flex items-center gap-2' },
-                                    React.createElement('button', { onClick: handleSave, className: 'icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '保存' },
+                                    React.createElement('button', { onClick: handleSave, disabled: isSaved, className: `icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors ${isSaved ? 'text-gray-400' : 'text-green-500'}`, 'aria-label': '保存' },
                                         React.createElement('i', { className: 'fa-solid fa-check text-xl' })
                                     ),
                                     React.createElement('button', { onClick: onClose, className: 'icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '关闭' },
@@ -1774,7 +1780,8 @@
                                           }, React.createElement('i', { className: 'fa-solid fa-stop text-xl' }))
                                         : React.createElement('button', { 
                                             onClick: handleOptimizeClick,
-                                            className: 'icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '智能优化'
+                                            disabled: !isSaved,
+                                            className: `icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors ${!isSaved ? 'text-gray-400' : ''}`, 'aria-label': '智能优化'
                                           }, React.createElement('i', { className: 'fa-solid fa-wand-magic-sparkles text-xl' }))
                                 )
                             )
@@ -2708,6 +2715,7 @@
                 };
                 const newProfiles = [...profiles, newProfile];
                 setProfiles(newProfiles);
+                setActiveProfileId(newProfile.id);
                 return newProfile;
             };
             
@@ -2900,7 +2908,7 @@
                             src: previewImageUrl, 
                             alt: 'Image preview', 
                             className: 'max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-default',
-                            onClick: (e) => e.stopPropagation() // Prevent click on image from closing
+                            onClick: (e) => setPreviewImageUrl(null)
                         })
                     ),
                     isPanelOpen && React.createElement('div', {
