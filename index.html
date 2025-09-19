@@ -902,7 +902,7 @@
                             React.createElement('button', { onClick: onConsoleClick, className: 'icon-button p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '查看控制台' },
                                 React.createElement(ConsoleIcon, null)
                             ),
-                             React.createElement('button', { onClick: onNewChat, className: 'icon-button p-2 hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '开启新对话' },
+                             React.createElement('button', { onClick: onNewChat, className: 'icon-button p-2 hover:bg-gray-200 rounded-lg transition-colors ml-[-4px]', 'aria-label': '开启新对话' },
                                 React.createElement(PlusIcon, null)
                             )
                         ),
@@ -1019,8 +1019,8 @@
         // --- From components/MainContent.tsx ---
         const MainContent = ({ conversation, isLoading, editingIndex, editedContent, setEditedContent, onSaveEdit, onCancelEdit, onStartEdit }) => {
             const chatContainerRef = useRef(null);
-            const scrollTopBeforeEdit = useRef(null);
-            const prevEditingIndex = useRef(editingIndex);
+            const prevEditingIndex = useRef(null);
+            const messageRefs = useRef(new Map());
 
             useEffect(() => {
                 const chatContainer = chatContainerRef.current;
@@ -1029,18 +1029,11 @@
                 const wasEditing = prevEditingIndex.current !== null && editingIndex === null;
 
                 if (wasEditing) {
-                    // Just finished editing, restore scroll position and do nothing else.
-                    if (scrollTopBeforeEdit.current !== null) {
-                        chatContainer.scrollTop = scrollTopBeforeEdit.current;
-                        scrollTopBeforeEdit.current = null;
+                    const messageElement = messageRefs.current.get(prevEditingIndex.current);
+                    if (messageElement) {
+                        messageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
-                } else if (editingIndex !== null) {
-                    // Currently editing, keep scroll position stable.
-                    if (scrollTopBeforeEdit.current !== null) {
-                       chatContainer.scrollTop = scrollTopBeforeEdit.current;
-                    }
-                } else {
-                    // Not editing and was not editing before, so scroll to bottom for new messages/streaming.
+                } else if (editingIndex === null) {
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 }
 
@@ -1048,9 +1041,6 @@
             }, [conversation, isLoading, editingIndex]);
 
             const startEditing = (index, content) => {
-                if (chatContainerRef.current) {
-                    scrollTopBeforeEdit.current = chatContainerRef.current.scrollTop;
-                }
                 onStartEdit(index, content);
             };
 
@@ -1068,10 +1058,19 @@
                             React.createElement('p', null, '您可以持续对话，对生成的SQL进行修改和完善。')
                         )
                     ) : (
-                        conversation.map((msg, index) =>
-                            msg.role === 'user' ? (
-                                React.createElement('div', {
+                        conversation.map((msg, index) => {
+                            const refCallback = (node) => {
+                                const map = messageRefs.current;
+                                if (node) {
+                                    map.set(index, node);
+                                } else {
+                                    map.delete(index);
+                                }
+                            };
+                            if (msg.role === 'user') {
+                                return React.createElement('div', {
                                     key: index,
+                                    ref: refCallback,
                                     className: `flex justify-end group ${editingIndex === index ? '' : 'items-end gap-2'}`.trim()
                                 },
                                 editingIndex === index ?
@@ -1088,29 +1087,29 @@
                                         )
                                     ) :
                                     [
-                                        React.createElement('button', { 
-                                            key: `edit-${index}`, 
-                                            onClick: () => startEditing(index, msg.content), 
-                                            disabled: isLoading, 
-                                            className: 'opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 hover:text-[var(--accent-color)] disabled:opacity-20 active:scale-90 mb-1 flex-shrink-0', 'aria-label': '编辑' 
+                                        React.createElement('button', {
+                                            key: `edit-${index}`,
+                                            onClick: () => startEditing(index, msg.content),
+                                            disabled: isLoading,
+                                            className: 'opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 hover:text-[var(--accent-color)] disabled:opacity-20 active:scale-90 mb-1 flex-shrink-0', 'aria-label': '编辑'
                                         },
                                             React.createElement(EditIcon, null)
                                         ),
-                                        React.createElement('div', { 
-                                            key: `msg-${index}`, 
-                                            className: 'user-message p-3 max-w-[75%] whitespace-pre-wrap break-words text-sm' 
+                                        React.createElement('div', {
+                                            key: `msg-${index}`,
+                                            className: 'user-message p-3 max-w-[75%] whitespace-pre-wrap break-words text-sm'
                                         }, msg.content)
                                     ]
                                 )
-                            ) : (
-                                React.createElement('div', { key: index, className: 'flex justify-start' },
+                            } else {
+                                return React.createElement('div', { key: index, ref: refCallback, className: 'flex justify-start' },
                                     React.createElement('div', { className: `assistant-message p-3 w-full ${msg.isError ? 'border-l-4 border-[var(--danger-bg)]' : ''}` },
                                         React.createElement('div', { className: 'flex justify-between items-center mb-2' },
                                             React.createElement('span', { className: 'text-sm font-semibold text-[var(--accent-color)]' }, '助手')
                                         ),
                                         msg.isStreaming ?
-                                            React.createElement('pre', { className: 'p-3 overflow-x-auto text-sm mono whitespace-pre-wrap' }, 
-                                                React.createElement('code', null, 
+                                            React.createElement('pre', { className: 'p-3 overflow-x-auto text-sm mono whitespace-pre-wrap' },
+                                                React.createElement('code', null,
                                                     msg.content,
                                                     React.createElement('span', { className: 'inline-block w-2 h-4 bg-[var(--accent-color)] animate-pulse ml-1 align-middle' })
                                                 )
@@ -1119,8 +1118,8 @@
                                             React.createElement(AssistantMessageRenderer, { markdown: msg.content })
                                     )
                                 )
-                            )
-                        )
+                            }
+                        })
                     ),
                     isLoading && conversation[conversation.length - 1]?.isStreaming !== true && React.createElement('div', { className: 'flex items-center gap-3 p-4' },
                         React.createElement('div', { className: 'small-loader' }),
@@ -1145,6 +1144,7 @@
             const importFileRef = useRef(null);
             const [availableModels, setAvailableModels] = useState([]);
             const [isFetchingModels, setIsFetchingModels] = useState(false);
+            const [fullscreenPrompt, setFullscreenPrompt] = useState(null);
 
             useEffect(() => {
                 setCurrentSettings(activeProfile.settings);
@@ -1173,12 +1173,12 @@
                 setNewProfileName('');
             };
             
-            const handleOptimizePrompt = async (key) => {
+            const handleOptimizePrompt = async (key, contentToOptimize, onComplete) => {
                 if (!currentSettings.apiUrl || !currentSettings.apiKey) {
                     alert('请先在API配置中设置API链接和Key。');
                     return;
                 }
-                const originalContent = currentSettings[key];
+                const originalContent = contentToOptimize ?? currentSettings[key];
                 if (!originalContent.trim()) {
                     alert('内容为空，无需优化。');
                     return;
@@ -1193,7 +1193,7 @@
                     const optimizedContent = match ? match[1].trim() : apiResponse.trim();
                     
                     if (optimizedContent) {
-                        setCurrentSettings(prev => ({ ...prev, [key]: optimizedContent }));
+                        onComplete(optimizedContent);
                         onShowToast(`"${promptFields.find(f => f.key === key)?.label}" 已优化！`);
                     } else {
                         throw new Error("API did not return any parsable content.");
@@ -1243,94 +1243,151 @@
                 }
             };
 
-            return (
-                React.createElement('div', { className: `slide-panel fixed top-0 right-0 w-full max-w-md h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`},
-                    React.createElement('header', { className: 'ios-header p-4 flex-shrink-0' },
-                        React.createElement('div', { className: 'flex justify-between items-center' },
-                            React.createElement('h2', { className: 'text-xl font-bold' }, '设置'),
-                            React.createElement('button', { onClick: onClose, className: 'icon-button p-2 text-2xl font-bold hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '关闭设置' }, '×')
-                        )
-                    ),
-                    React.createElement('div', { className: 'p-5 overflow-y-auto flex-grow' },
-                        React.createElement('div', { className: 'space-y-6' },
-                            React.createElement('div', { className: 'ios-card p-5' },
-                                React.createElement('h3', { className: 'text-lg font-semibold mb-3' }, '配置管理'),
-                                React.createElement('div', { className: 'space-y-3' },
-                                    React.createElement('div', null,
-                                        React.createElement('label', { htmlFor: 'profile-select', className: 'block text-sm font-medium text-gray-700 mb-1' }, '当前配置'),
-                                        React.createElement('select', { id: 'profile-select', value: activeProfile.id, onChange: (e) => onSwitch(e.target.value), className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' },
-                                            profiles.map(p => React.createElement('option', { key: p.id, value: p.id }, p.name))
-                                        )
+            const FullscreenEditor = ({ prompt, onSave, onClose, onOptimize, isOptimizing }) => {
+                const [content, setContent] = useState(prompt.content);
+
+                const handleSave = () => {
+                    onSave(prompt.key, content);
+                    onClose();
+                };
+
+                return React.createElement('div', { className: 'fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm' },
+                    React.createElement('div', { className: 'ios-card w-full max-w-4xl h-[90vh] flex flex-col' },
+                        React.createElement('header', { className: 'ios-header p-4 flex-shrink-0' },
+                            React.createElement('div', { className: 'flex justify-between items-center' },
+                                React.createElement('h2', { className: 'text-xl font-bold' }, `编辑: ${prompt.label}`),
+                                React.createElement('div', { className: 'flex items-center gap-2' },
+                                    React.createElement('button', { 
+                                        onClick: () => onOptimize(prompt.key, content, setContent), 
+                                        disabled: isOptimizing,
+                                        className: 'icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '智能优化'
+                                    }, isOptimizing ? React.createElement('div', {className: 'small-loader'}) : React.createElement('i', { className: 'fa-solid fa-wand-magic-sparkles text-xl' })),
+                                    React.createElement('button', { onClick: handleSave, className: 'icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '保存' },
+                                        React.createElement('i', { className: 'fa-solid fa-check text-xl' })
                                     ),
-                                    React.createElement('div', { className: 'flex gap-2' },
-                                        React.createElement('input', { type: 'text', value: newProfileName, onChange: (e) => setNewProfileName(e.target.value), placeholder: '新配置名称', className: 'flex-grow p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' }),
-                                        React.createElement('button', { onClick: handleSaveNewProfile, className: 'ios-button ios-button-secondary text-sm px-3 py-1' }, '创建')
-                                    ),
-                                    React.createElement('div', { className: 'grid grid-cols-2 gap-2'},
-                                        React.createElement('button', { onClick: () => onRename(activeProfile.id), className: 'ios-button ios-button-secondary text-sm w-full py-2' }, '重命名当前配置'),
-                                        React.createElement('button', { onClick: () => onDelete(activeProfile.id), className: 'ios-button danger text-sm w-full py-2' }, '删除当前配置')
+                                    React.createElement('button', { onClick: onClose, className: 'icon-button w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '关闭' },
+                                       React.createElement('i', { className: 'fa-solid fa-xmark text-xl' })
                                     )
                                 )
-                            ),
-                            React.createElement('div', { className: 'ios-card p-5' },
-                                React.createElement('h3', { className: 'text-lg font-semibold mb-3' }, 'API 配置'),
-                                React.createElement('div', { className: 'space-y-3' },
-                                    React.createElement('div', null,
-                                        React.createElement('label', { htmlFor: 'apiUrl', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'API 链接'),
-                                        React.createElement('input', { type: 'url', id: 'apiUrl', name: 'apiUrl', value: currentSettings.apiUrl, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base', placeholder: 'https://generativelanguage.googleapis.com/v1beta' })
-                                    ),
-                                    React.createElement('div', null,
-                                        React.createElement('label', { htmlFor: 'apiKey', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'API Key'),
-                                        React.createElement('input', { type: 'password', id: 'apiKey', name: 'apiKey', value: currentSettings.apiKey, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base', placeholder: 'Enter your API Key' })
-                                    ),
-                                    React.createElement('button', { onClick: handleFetchModels, disabled: isFetchingModels || !currentSettings.apiUrl || !currentSettings.apiKey, className: 'ios-button ios-button-secondary w-full flex items-center justify-center gap-2' },
-                                        React.createElement('span', null, isFetchingModels ? '获取中...' : '获取可用模型'),
-                                        isFetchingModels && React.createElement('div', { className: 'small-loader' })
-                                    ),
-                                    availableModels.length > 0 && (
+                            )
+                        ),
+                        React.createElement('div', { className: 'p-5 flex-grow min-h-0' },
+                            React.createElement('textarea', {
+                                value: content,
+                                onChange: e => setContent(e.target.value),
+                                className: 'w-full h-full border-2 border-[var(--border-color)] rounded-lg p-3 text-base resize-none bg-[var(--card-bg)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[var(--accent-color)]/20 mono',
+                                placeholder: '输入内容...'
+                            })
+                        )
+                    )
+                );
+            };
+
+            return (
+                React.createElement(React.Fragment, null,
+                    React.createElement('div', { className: `slide-panel fixed top-0 right-0 w-full max-w-md h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`},
+                        React.createElement('header', { className: 'ios-header p-4 flex-shrink-0' },
+                            React.createElement('div', { className: 'flex justify-between items-center' },
+                                React.createElement('h2', { className: 'text-xl font-bold' }, '设置'),
+                                React.createElement('button', { onClick: onClose, className: 'icon-button p-2 text-2xl font-bold hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '关闭设置' }, '×')
+                            )
+                        ),
+                        React.createElement('div', { className: 'p-5 overflow-y-auto flex-grow' },
+                            React.createElement('div', { className: 'space-y-6' },
+                                React.createElement('div', { className: 'ios-card p-5' },
+                                    React.createElement('h3', { className: 'text-lg font-semibold mb-3' }, '配置管理'),
+                                    React.createElement('div', { className: 'space-y-3' },
                                         React.createElement('div', null,
-                                            React.createElement('label', { htmlFor: 'apiModel', className: 'block text-sm font-medium text-gray-700 mb-1' }, '选择模型'),
-                                            React.createElement('select', { id: 'apiModel', name: 'apiModel', value: currentSettings.apiModel, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' },
-                                                React.createElement('option', { value: '' }, '请选择模型'),
-                                                availableModels.map(m => React.createElement('option', { key: m, value: m }, m))
+                                            React.createElement('label', { htmlFor: 'profile-select', className: 'block text-sm font-medium text-gray-700 mb-1' }, '当前配置'),
+                                            React.createElement('select', { id: 'profile-select', value: activeProfile.id, onChange: (e) => onSwitch(e.target.value), className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' },
+                                                profiles.map(p => React.createElement('option', { key: p.id, value: p.id }, p.name))
+                                            )
+                                        ),
+                                        React.createElement('div', { className: 'flex gap-2' },
+                                            React.createElement('input', { type: 'text', value: newProfileName, onChange: (e) => setNewProfileName(e.target.value), placeholder: '新配置名称', className: 'flex-grow p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' }),
+                                            React.createElement('button', { onClick: handleSaveNewProfile, className: 'ios-button ios-button-secondary text-sm px-3 py-1' }, '创建')
+                                        ),
+                                        React.createElement('div', { className: 'grid grid-cols-2 gap-2'},
+                                            React.createElement('button', { onClick: () => onRename(activeProfile.id), className: 'ios-button ios-button-secondary text-sm w-full py-2' }, '重命名当前配置'),
+                                            React.createElement('button', { onClick: () => onDelete(activeProfile.id), className: 'ios-button danger text-sm w-full py-2' }, '删除当前配置')
+                                        )
+                                    )
+                                ),
+                                React.createElement('div', { className: 'ios-card p-5' },
+                                    React.createElement('h3', { className: 'text-lg font-semibold mb-3' }, 'API 配置'),
+                                    React.createElement('div', { className: 'space-y-3' },
+                                        React.createElement('div', null,
+                                            React.createElement('label', { htmlFor: 'apiUrl', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'API 链接'),
+                                            React.createElement('input', { type: 'url', id: 'apiUrl', name: 'apiUrl', value: currentSettings.apiUrl, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base', placeholder: 'https://generativelanguage.googleapis.com/v1beta' })
+                                        ),
+                                        React.createElement('div', null,
+                                            React.createElement('label', { htmlFor: 'apiKey', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'API Key'),
+                                            React.createElement('input', { type: 'password', id: 'apiKey', name: 'apiKey', value: currentSettings.apiKey, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base', placeholder: 'Enter your API Key' })
+                                        ),
+                                        React.createElement('button', { onClick: handleFetchModels, disabled: isFetchingModels || !currentSettings.apiUrl || !currentSettings.apiKey, className: 'ios-button ios-button-secondary w-full flex items-center justify-center gap-2' },
+                                            React.createElement('span', null, isFetchingModels ? '获取中...' : '获取可用模型'),
+                                            isFetchingModels && React.createElement('div', { className: 'small-loader' })
+                                        ),
+                                        availableModels.length > 0 && (
+                                            React.createElement('div', null,
+                                                React.createElement('label', { htmlFor: 'apiModel', className: 'block text-sm font-medium text-gray-700 mb-1' }, '选择模型'),
+                                                React.createElement('select', { id: 'apiModel', name: 'apiModel', value: currentSettings.apiModel, onChange: handleChange, className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base' },
+                                                    React.createElement('option', { value: '' }, '请选择模型'),
+                                                    availableModels.map(m => React.createElement('option', { key: m, value: m }, m))
+                                                )
                                             )
                                         )
                                     )
-                                )
-                            ),
-                            ...promptFields.map(({key, label, description, placeholder}) => (
-                                React.createElement('div', { key: key, className: 'ios-card p-5' },
-                                    React.createElement('label', { htmlFor: key, className: 'block text-lg font-semibold mb-3' }, label),
-                                    React.createElement('p', { className: 'text-sm text-gray-600 mb-2' }, description),
-                                    React.createElement('textarea', { id: key, name: key, value: currentSettings[key], onChange: handleChange, className: 'w-full border-2 border-[var(--border-color)] rounded-lg p-3 text-base resize-vertical min-h-[120px] bg-[var(--card-bg)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[var(--accent-color)]/20', placeholder: placeholder }),
-                                    React.createElement('input', { type: 'file', id: `${key}-upload`, className: 'hidden', accept: '.txt,.md,.yaml,.yml,.sql', onChange: (e) => handleFileChange(e, key) }),
-                                    React.createElement('div', { className: 'mt-3 grid grid-cols-2 gap-2' },
-                                        React.createElement('button', { onClick: () => document.getElementById(`${key}-upload`)?.click(), className: 'ios-button ios-button-secondary w-full' }, '上传文件'),
+                                ),
+                                ...promptFields.map(({key, label, description, placeholder}) => (
+                                    React.createElement('div', { key: key, className: 'ios-card p-5 relative' },
                                         React.createElement('button', {
-                                            onClick: () => handleOptimizePrompt(key),
-                                            className: 'ios-button ios-button-secondary w-full flex items-center justify-center gap-2',
-                                            disabled: isOptimizingField !== null,
-                                        },
-                                            isOptimizingField === key
-                                                ? React.createElement(React.Fragment, null, React.createElement('div', { className: 'small-loader' }), React.createElement('span', null, '优化中...'))
-                                                : React.createElement(React.Fragment, null, React.createElement('i', { className: 'fa-solid fa-wand-magic-sparkles' }), React.createElement('span', null, '智能优化'))
+                                            onClick: () => setFullscreenPrompt({ key, label, content: currentSettings[key] }),
+                                            className: 'absolute top-4 right-4 text-gray-400 hover:text-[var(--accent-color)] transition-colors z-10 p-2',
+                                            'aria-label': '全屏编辑'
+                                        }, React.createElement('i', { className: 'fa-solid fa-maximize' })),
+                                        React.createElement('label', { htmlFor: key, className: 'block text-lg font-semibold mb-3' }, label),
+                                        React.createElement('p', { className: 'text-sm text-gray-600 mb-2' }, description),
+                                        React.createElement('textarea', { id: key, name: key, value: currentSettings[key], onChange: handleChange, className: 'w-full border-2 border-[var(--border-color)] rounded-lg p-3 text-base resize-vertical min-h-[120px] bg-[var(--card-bg)] focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[var(--accent-color)]/20', placeholder: placeholder }),
+                                        React.createElement('input', { type: 'file', id: `${key}-upload`, className: 'hidden', accept: '.txt,.md,.yaml,.yml,.sql', onChange: (e) => handleFileChange(e, key) }),
+                                        React.createElement('div', { className: 'mt-3 grid grid-cols-2 gap-2' },
+                                            React.createElement('button', { onClick: () => document.getElementById(`${key}-upload`)?.click(), className: 'ios-button ios-button-secondary w-full' }, '上传文件'),
+                                            React.createElement('button', {
+                                                onClick: () => handleOptimizePrompt(key, null, (newContent) => setCurrentSettings(prev => ({...prev, [key]: newContent}))),
+                                                className: 'ios-button ios-button-secondary w-full flex items-center justify-center gap-2',
+                                                disabled: isOptimizingField !== null,
+                                            },
+                                                isOptimizingField === key
+                                                    ? React.createElement(React.Fragment, null, React.createElement('div', { className: 'small-loader' }), React.createElement('span', null, '优化中...'))
+                                                    : React.createElement(React.Fragment, null, React.createElement('i', { className: 'fa-solid fa-wand-magic-sparkles' }), React.createElement('span', null, '智能优化'))
+                                            )
                                         )
                                     )
+                                ))
+                            )
+                        ),
+                        React.createElement('div', { className: 'p-4 border-t border-[var(--border-color)] flex-shrink-0 bg-[var(--card-bg)]' },
+                            React.createElement('div', { className: 'mx-auto grid gap-2' },
+                                React.createElement('button', { onClick: () => onSave(currentSettings), className: 'ios-button w-full' }, '保存设置'),
+                                React.createElement('button', { onClick: onClearAll, className: 'ios-button danger w-full' }, '清除所有数据'),
+                                React.createElement('div', { className: 'grid grid-cols-2 gap-2' },
+                                    React.createElement('button', { onClick: onExport, className: 'ios-button ios-button-secondary w-full' }, '导出设置'),
+                                    React.createElement('button', { onClick: () => importFileRef.current?.click(), className: 'ios-button ios-button-secondary w-full' }, '导入设置'),
+                                    React.createElement('input', { type: 'file', ref: importFileRef, onChange: handleImport, className: 'hidden', accept: '.json' })
                                 )
-                            ))
-                        )
-                    ),
-                    React.createElement('div', { className: 'p-4 border-t border-[var(--border-color)] flex-shrink-0 bg-[var(--card-bg)]' },
-                        React.createElement('div', { className: 'mx-auto grid gap-2' },
-                            React.createElement('button', { onClick: () => onSave(currentSettings), className: 'ios-button w-full' }, '保存设置'),
-                            React.createElement('button', { onClick: onClearAll, className: 'ios-button danger w-full' }, '清除所有数据'),
-                            React.createElement('div', { className: 'grid grid-cols-2 gap-2' },
-                                React.createElement('button', { onClick: onExport, className: 'ios-button ios-button-secondary w-full' }, '导出设置'),
-                                React.createElement('button', { onClick: () => importFileRef.current?.click(), className: 'ios-button ios-button-secondary w-full' }, '导入设置'),
-                                React.createElement('input', { type: 'file', ref: importFileRef, onChange: handleImport, className: 'hidden', accept: '.json' })
                             )
                         )
-                    )
+                    ),
+                    fullscreenPrompt && React.createElement(FullscreenEditor, {
+                        prompt: fullscreenPrompt,
+                        onSave: (key, newContent) => {
+                            setCurrentSettings(prev => ({ ...prev, [key]: newContent }));
+                            onShowToast(`"${promptFields.find(f => f.key === key)?.label}" 已保存!`);
+                        },
+                        onClose: () => setFullscreenPrompt(null),
+                        onOptimize: handleOptimizePrompt,
+                        isOptimizing: isOptimizingField === fullscreenPrompt.key
+                    })
                 )
             );
         };
@@ -1537,6 +1594,7 @@
                             React.createElement('li', null, React.createElement('strong', null, '多套配置: '), '点击标题栏右侧的齿轮图标，可以创建多套配置方案，以适应不同的数据库或项目需求。'),
                             React.createElement('li', null, React.createElement('strong', null, '自定义 Prompt: '), '通过修改引导提示、数据库结构等信息，可以定制 AI 的行为，使其生成更符合需求的 SQL。'),
                             React.createElement('li', null, React.createElement('strong', null, '智能优化: '), '点击 Prompt 输入框下方的 "智能优化" 按钮，可利用 AI 自动将输入或上传的文本内容（如数据库结构、术语定义等）优化为更规整、更易于 AI 理解的 YAML 格式。'),
+                             React.createElement('li', null, React.createElement('strong', null, '全屏编辑: '), '点击 Prompt 输入框右上角的放大图标，可以在一个更大的、更专注的视图中编辑内容。'),
                             React.createElement('li', null, React.createElement('strong', null, 'API 设置: '), '在这里配置 API 服务地址和 Key。点击 "获取可用模型" 按钮将自动拉取并填充模型列表。')
                         ),
                         React.createElement(Tip, { title: '高级提示：使用 YAML 格式' },
