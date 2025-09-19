@@ -55,28 +55,60 @@
             --gradient-from: #4a90e2;
             --gradient-to: #64b5f6;
         }
-        .dark ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
 
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+            transition: background 0.2s;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Firefox 滚动条样式 */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) var(--bg-color);
+        }
+
+        /* 暗色模式下的滚动条样式 */
         .dark ::-webkit-scrollbar-track {
             background: var(--card-bg);
         }
 
         .dark ::-webkit-scrollbar-thumb {
             background: #4a5568;
-            border-radius: 4px;
         }
 
         .dark ::-webkit-scrollbar-thumb:hover {
             background: #5a6578;
         }
 
-        /* Firefox 滚动条样式 */
         .dark * {
-            scrollbar-width: thin;
             scrollbar-color: #4a5568 var(--card-bg);
+        }
+
+        /* 移动端滚动条优化 */
+        @media (max-width: 768px) {
+            ::-webkit-scrollbar {
+                width: 4px;
+                height: 4px;
+            }
+            
+            * {
+                scrollbar-width: thin;
+            }
         }
         
         body {
