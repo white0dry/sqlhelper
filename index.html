@@ -710,6 +710,7 @@
             apiUrl: 'https://generativelanguage.googleapis.com/v1beta',
             apiKey: '',
             apiModel: 'gemini-2.5-flash',
+            maxHistory: 10,
             guidePrompt: `规则:
 - 使用标准SQL语法
 - 添加必要的注释
@@ -1446,8 +1447,8 @@
             }, [activeProfile]);
 
             const handleChange = (e) => {
-                const { name, value } = e.target;
-                setCurrentSettings(prev => ({ ...prev, [name]: value }));
+                const { name, value, type } = e.target;
+                setCurrentSettings(prev => ({ ...prev, [name]: type === 'number' ? parseInt(value, 10) : value }));
             };
             
             const handleResetCurrentSettings = () => {
@@ -1603,6 +1604,21 @@
                                             React.createElement('select', { id: 'profile-select', value: activeProfile.id, onChange: (e) => onSwitch(e.target.value), className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base h-11' },
                                                 profiles.map(p => React.createElement('option', { key: p.id, value: p.id }, p.name))
                                             )
+                                        ),
+                                        React.createElement('div', null,
+                                            React.createElement('label', { htmlFor: 'maxHistory', className: 'block text-sm font-medium text-gray-700 mb-1' }, '历史记录最大条数'),
+                                            React.createElement('input', { 
+                                                type: 'number', 
+                                                id: 'maxHistory', 
+                                                name: 'maxHistory', 
+                                                value: currentSettings.maxHistory || 10, 
+                                                onChange: handleChange, 
+                                                className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base h-11',
+                                                min: '1',
+                                                max: '50',
+                                                'aria-describedby': 'max-history-description'
+                                            }),
+                                            React.createElement('p', { id: 'max-history-description', className: 'text-xs text-gray-500 mt-1' }, '设置本地存储的对话历史数量 (1-50)。')
                                         ),
                                         React.createElement('div', { className: 'flex gap-2' },
                                             React.createElement('input', { type: 'text', value: newProfileName, onChange: (e) => setNewProfileName(e.target.value), placeholder: '新配置名称', className: 'flex-grow p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base h-11' }),
@@ -1782,8 +1798,19 @@
             );
         };
 
-        const HistoryPanel = ({ isOpen, onClose, history, setHistory, onLoadConversation }) => {
+        const HistoryPanel = ({ isOpen, onClose, history, setHistory, onLoadConversation, maxHistory }) => {
             const importFileRef = useRef(null);
+            const [searchTerm, setSearchTerm] = React.useState('');
+
+            const filteredHistory = React.useMemo(() => {
+                return history.filter(item => {
+                    if (!searchTerm.trim()) return true;
+                    const lowerCaseSearch = searchTerm.toLowerCase();
+                    return item.conversation.some(msg => 
+                        msg.content && msg.content.toLowerCase().includes(lowerCaseSearch)
+                    );
+                });
+            }, [history, searchTerm]);
 
             const clearHistory = () => {
                 if (window.confirm('确定清空所有历史记录吗？')) {
@@ -1822,7 +1849,7 @@
                 try {
                     const importedHistory = await readJsonFile(file);
                     if (Array.isArray(importedHistory) && importedHistory.every(item => 'conversation' in item && 'time' in item)) {
-                        setHistory(importedHistory.slice(0, 10));
+                        setHistory(importedHistory.slice(0, maxHistory));
                         alert('历史记录导入成功！');
                     } else {
                         throw new Error('文件内容不是有效的历史记录格式。');
@@ -1839,19 +1866,30 @@
                 React.createElement('aside', { className: `slide-panel fixed top-0 left-0 w-full max-w-lg h-full bg-[var(--bg-color)] shadow-xl z-50 flex flex-col transform ${isOpen ? 'translate-x-0' : '-translate-x-full'}` },
                     React.createElement('header', { className: 'ios-header p-4 flex-shrink-0' },
                         React.createElement('div', { className: 'flex justify-between items-center' },
-                            React.createElement('h2', { className: 'text-xl font-bold' }, '历史记录 (最近10条)'),
+                            React.createElement('h2', { className: 'text-xl font-bold' }, `历史记录 (最近${maxHistory}条)`),
                             React.createElement('button', { onClick: onClose, className: 'icon-button p-2 text-2xl font-bold hover:bg-gray-200 rounded-lg transition-colors', 'aria-label': '关闭历史' }, '×')
                         )
                     ),
                     React.createElement('div', { className: 'p-5 overflow-y-auto flex-grow' },
+                         React.createElement('div', { className: 'mb-4' },
+                            React.createElement('input', {
+                                type: 'search',
+                                placeholder: '通过关键词搜索...',
+                                value: searchTerm,
+                                onChange: e => setSearchTerm(e.target.value),
+                                className: 'w-full p-2 border-2 border-[var(--border-color)] rounded-lg bg-[var(--card-bg)] text-base'
+                            })
+                        ),
                         history.length === 0 ? (
                             React.createElement('p', { className: 'text-sm text-gray-500' }, '暂无历史记录。')
+                        ) : filteredHistory.length === 0 ? (
+                             React.createElement('p', { className: 'text-sm text-gray-500' }, '未找到匹配的记录。')
                         ) : (
-                            history.map((h, idx) => React.createElement(HistoryItem, {
+                            filteredHistory.map((h, idx) => React.createElement(HistoryItem, {
                                 key: h.time,
                                 item: h,
                                 index: idx,
-                                total: history.length,
+                                total: filteredHistory.length,
                                 onLoadConversation: loadConversation,
                                 onDeleteItem: deleteItem
                             }))
@@ -1948,13 +1986,14 @@
                             React.createElement('li', null, React.createElement('strong', null, '编辑与重生成: '), '将鼠标悬停在消息上可点击铅笔图标进行编辑。也可以点击 "重新生成" 按钮让 AI 重新回答最后一个问题。'),
                             React.createElement('li', null, React.createElement('strong', null, '复制代码块: '), 'AI 回复的代码块右上角会出现复制按钮，方便一键复制代码。'),
                             React.createElement('li', null, React.createElement('strong', null, '新对话: '), '点击标题栏左侧的 "+" 图标会将当前对话存入历史记录，并开始一个全新的会话。'),
-                            React.createElement('li', null, React.createElement('strong', null, '历史记录: '), '点击标题栏左侧的时钟图标，可以查看、加载、或删除最近的10次对话。'),
+                            React.createElement('li', null, React.createElement('strong', null, '历史记录: '), '点击标题栏左侧的时钟图标，可以查看、加载、或删除最近的对话。新增搜索功能，可快速查找历史会话。'),
                             React.createElement('li', null, React.createElement('strong', null, '开发者控制台: '), '点击标题栏左侧的终端图标，可以查看应用的详细日志，便于排查API调用等问题。')
                         )
                     ),
                     React.createElement(Section, { title: '配置管理 (设置面板)' },
                          React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
                             React.createElement('li', null, React.createElement('strong', null, '多套配置: '), '点击标题栏右侧的齿轮图标，可以创建多套配置方案，以适应不同的数据库或项目需求。'),
+                            React.createElement('li', null, React.createElement('strong', null, '历史记录数量: '), '现在您可以在“配置管理”中设置要保存的最大历史对话条数。'),
                             React.createElement('li', null, React.createElement('strong', null, '自定义 Prompt: '), '通过修改引导提示、数据库结构等信息，可以定制 AI 的行为，使其生成更符合需求的 SQL。'),
                             React.createElement('li', null, React.createElement('strong', null, '智能优化: '), '点击 Prompt 输入框下方的 "智能优化" 按钮，可利用 AI 自动将输入或上传的文本内容（如数据库结构、术语定义等）优化为更规整、更易于 AI 理解的 YAML 格式。'),
                              React.createElement('li', null, React.createElement('strong', null, '全屏编辑: '), '点击 Prompt 输入框右上角的放大图标，可以在一个更大的、更专注的视图中编辑内容。'),
@@ -2069,6 +2108,8 @@
                 if (lastMessage && lastMessage.isStreaming) {
                     return;
                 }
+
+                const maxHistory = activeProfile.settings.maxHistory || 10;
             
                 setActiveHistoryId(prevId => {
                     let currentId = prevId;
@@ -2080,16 +2121,16 @@
                                     { ...item, conversation: conversation } : item);
                             } else {
                                 currentId = Date.now();
-                                return [{ conversation: conversation, time: currentId }, ...prevHistory].slice(0, 10);
+                                return [{ conversation: conversation, time: currentId }, ...prevHistory].slice(0, maxHistory);
                             }
                         });
                     } else {
                         currentId = Date.now();
-                        setHistory(prevHistory => [{ conversation: conversation, time: currentId }, ...prevHistory].slice(0, 10));
+                        setHistory(prevHistory => [{ conversation: conversation, time: currentId }, ...prevHistory].slice(0, maxHistory));
                     }
                     return currentId;
                 });
-            }, [setHistory]);
+            }, [setHistory, activeProfile.settings.maxHistory]);
 
             useEffect(() => {
                 saveConversationToHistory(conversation);
@@ -2497,7 +2538,8 @@
                         onClose: () => handleToggleHistory(false),
                         history: history,
                         setHistory: setHistory,
-                        onLoadConversation: handleLoadConversationFromHistory
+                        onLoadConversation: handleLoadConversationFromHistory,
+                        maxHistory: activeProfile.settings.maxHistory || 10
                     }),
                     React.createElement(ConsolePanel, {
                         isOpen: isConsoleOpen,
