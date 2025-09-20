@@ -497,6 +497,8 @@
             border-radius: 12px;
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none;  /* IE and Edge */
+            min-height: 44px;
+            height: 44px;
         }
         .app-mounted .input-textarea {
             transition: all 0.3s;
@@ -510,14 +512,6 @@
             outline: none;
         }
         /* Decorative elements */
-        .decoration-dots {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            background: radial-gradient(circle, var(--accent-light) 2px, transparent 2px);
-            background-size: 10px 10px;
-            opacity: 0.3;
-        }
         .app-mounted .slide-panel {
              transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -673,10 +667,6 @@
             .chat-input-container {
                 flex-direction: row;
                 align-items: flex-end;
-            }
-            .chat-input-container .input-textarea {
-                min-height: 44px;
-                height: 44px;
             }
             .chat-input-container .flex-shrink-0 {
                 align-self: flex-end;
@@ -2757,7 +2747,8 @@
             }, [conversation, runGeneration]);
 
             const handleKeyDown = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
+                const isMobile = /Mobi/i.test(window.navigator.userAgent);
+                if (e.key === 'Enter' && !e.shiftKey && !isMobile && !isLoading) {
                     e.preventDefault();
                     handleSendMessage();
                 }
@@ -2984,13 +2975,21 @@
                                     React.createElement('textarea', {
                                         id: 'user-query',
                                         className: 'input-textarea w-full p-3 text-base resize-none max-h-40',
-                                        placeholder: '继续输入以改进SQL，或开始新对话... (Shift+Enter 换行)',
+                                        placeholder: '输入任何问题...',
                                         rows: 1,
                                         value: userQuery,
                                         onChange: (e) => {
                                             setUserQuery(e.target.value);
-                                            e.target.style.height = 'auto';
-                                            e.target.style.height = `${e.target.scrollHeight}px`;
+                                            const minHeight = 44;
+                                            
+                                            // 如果内容为空，直接设置为最小高度
+                                            if (e.target.value.trim() === '') {
+                                                e.target.style.height = `${minHeight}px`;
+                                            } else {
+                                                e.target.style.height = 'auto';
+                                                const newHeight = Math.max(minHeight, e.target.scrollHeight);
+                                                e.target.style.height = `${newHeight}px`;
+                                            }
                                         },
                                         onKeyDown: handleKeyDown,
                                         onPaste: handlePaste,
@@ -2998,7 +2997,7 @@
                                     }),
                                     isLoading
                                         ? React.createElement('button', { onClick: handleStop, className: 'ios-button danger h-11 w-11 p-0 flex-shrink-0' }, React.createElement(StopIcon))
-                                        : React.createElement('div', { className: 'flex items-center gap-2 flex-shrink-0' },
+                                        : React.createElement('div', { className: 'flex items-center gap-1 md:gap-2 flex-shrink-0' },
                                             React.createElement('button', {
                                                 onClick: () => imageInputRef.current?.click(),
                                                 disabled: isLoading || editingIndex !== null || chatImages.length >= MAX_IMAGES_PER_MESSAGE,
