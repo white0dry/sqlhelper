@@ -50,7 +50,7 @@
             --accent-dark: #64b5f6;
             --border-color: #2f3336;
             --header-bg: rgba(15, 20, 25, 0.95);
-            --info-bg: #0d47a1;
+            --info-bg: #1e3a5f;
             --info-border: #29b6f6;
             --danger-bg: #e54848;
             --danger-hover-bg: #c53030;
@@ -2334,44 +2334,337 @@
                     )
                 ),
                 React.createElement('div', { className: 'p-5 overflow-y-auto flex-grow space-y-6' },
-                    React.createElement(Section, { title: '基础功能' },
-                        React.createElement('p', null, '欢迎使用 SQL 自动化编写助手！本工具旨在帮助您通过自然语言快速生成和优化 SQL 查询。'),
-                        React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
-                            React.createElement('li', null, React.createElement('strong', null, '对话式生成: '), '在下方的输入框中输入数据需求，点击发送即可生成 SQL。'),
-                            React.createElement('li', null, React.createElement('strong', null, '图片上传: '), '点击输入框旁的图片图标，可以上传最多3张图片与文字一同分析 (仅支持 Gemini 等识图模型)。也支持拖拽图片到输入框区域上传。'),
-                            React.createElement('li', null, React.createElement('strong', null, '持续优化: '), '可以继续输入指令，对已生成的 SQL 进行修改，例如 "添加 xx 条件" 或 "按 xx 排序"。'),
-                            React.createElement('li', null, React.createElement('strong', null, '编辑、删除与重生成: '), '将鼠标悬停在消息上可点击铅笔图标进行编辑或垃圾桶图标删除。也可以点击 "重新生成" 按钮让 AI 重新回答最后一个问题。'),
-                            React.createElement('li', null, React.createElement('strong', null, '复制代码块: '), 'AI 回复的代码块右上角会出现复制按钮，方便一键复制代码。'),
-                            React.createElement('li', null, React.createElement('strong', null, '新对话: '), '点击标题栏左侧的 "+" 图标会将当前对话存入历史记录，并开始一个全新的会话。'),
-                            React.createElement('li', null, React.createElement('strong', null, '历史记录: '), '点击标题栏左侧的时钟图标，可以查看、加载、或删除最近的对话。新增搜索功能，可快速查找历史会话。'),
-                            React.createElement('li', null, React.createElement('strong', null, '开发者控制台: '), '点击标题栏左侧的终端图标，可以查看应用的详细日志，便于排查API调用等问题。')
-                        )
-                    ),
-                    React.createElement(Section, { title: '设置面板' },
-                         React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
-                            React.createElement('li', null, React.createElement('strong', null, '多套配置: '), '点击标题栏右侧的齿轮图标，可以创建多套配置方案，以适应不同的数据库或项目需求。'),
-                            React.createElement('li', null, React.createElement('strong', null, '历史记录数量: '), '现在您可以在“配置管理”中设置要保存的最大历史对话条数。'),
-                            React.createElement('li', null, React.createElement('strong', null, '自定义 Prompt: '), '通过修改SQL生成规则、数据库结构等信息，可以定制 AI 的行为，使其生成更符合需求的 SQL。支持上传文件 (.txt, .md, .yaml, .sql, .xlsx, .xls)，也支持直接拖拽文件到输入框。'),
-                            React.createElement('li', null, React.createElement('strong', null, '智能优化: '), '点击 Prompt 输入框下方的 "智能优化" 按钮，可利用 AI 自动将输入或上传的文本内容（如数据库结构、术语定义等）优化为更规整、更易于 AI 理解的 YAML 格式。'),
-                             React.createElement('li', null, React.createElement('strong', null, '全屏编辑: '), '点击 Prompt 输入框右上角的放大图标，可以在一个更大的、更专注的视图中编辑内容。'),
-                             React.createElement('li', null, React.createElement('strong', null, '批量导入/导出: '), '可以一次性选择多个配置文件进行导入。导出时，也可以选择仅导出当前配置或一次性导出所有配置的多个对应json文件。'),
-                            React.createElement('li', null, React.createElement('strong', null, 'API 设置: '), '在这里配置 API 服务地址和 Key。点击 "获取可用模型" 按钮将自动拉取并填充模型列表。')
+                    React.createElement(Section, { title: '快速开始' },
+                        React.createElement('p', null, '欢迎使用 SQL 自动化编写助手！这是一个通过对话方式生成和优化 SQL 查询的智能工具。'),
+                        React.createElement('div', { className: 'mt-3 p-3 bg-[var(--info-bg)] border-l-4 border-[var(--info-border)] rounded-r-lg' },
+                            React.createElement('p', { className: 'font-semibold text-[var(--info-border)]' }, '三步开始使用：'),
+                            React.createElement('ol', { className: 'mt-2 text-sm space-y-1' },
+                                React.createElement('li', null, '1. 配置 API：点击右上角齿轮图标 ', React.createElement('i', { className: 'fa-solid fa-cog text-xs' }), ' 设置您的 API'),
+                                React.createElement('li', null, '2. 输入需求：在底部输入框中描述您想要的 SQL 查询'),
+                                React.createElement('li', null, '3. 获得结果：AI 将生成相应的 SQL 代码并提供详细说明')
+                            )
                         ),
-                        React.createElement(Tip, { title: '高级提示：使用 YAML 格式' },
-                            '在 "数据库表结构" 或 "行业术语定义" 等信息中，使用清晰的 YAML 格式可以让 AI 更准确地理解和记忆上下文信息，从而提高生成质量。智能优化功能可以快速完成转换。'
+                        React.createElement('p', { className: 'text-sm text-gray-600' }, '如果您还没有 API Key，建议使用 Google Gemini API（免费额度较高）或其他兼容 OpenAI 格式的 API 服务。')
+                    ),
+
+                    React.createElement(Section, { title: '必要设置 - API 配置' },
+                        React.createElement('p', null, '使用前必须先配置 API，否则无法生成 SQL。配置步骤：'),
+                        React.createElement('ol', { className: 'mt-2 space-y-2 text-sm' },
+                            React.createElement('li', { className: 'flex items-start' },
+                                React.createElement('span', { className: 'text-[var(--accent-color)] font-bold mr-2 min-w-[1.5rem]' }, '1.'),
+                                React.createElement('div', null,
+                                    React.createElement('strong', null, '打开设置面板：'), '点击页面右上角的齿轮图标 ', React.createElement('i', { className: 'fa-solid fa-cog text-xs' })
+                                )
+                            ),
+                            React.createElement('li', { className: 'flex items-start' },
+                                React.createElement('span', { className: 'text-[var(--accent-color)] font-bold mr-2 min-w-[1.5rem]' }, '2.'),
+                                React.createElement('div', null,
+                                    React.createElement('strong', null, '配置 API 信息：'), '在"API 配置"部分填入：',
+                                    React.createElement('ul', { className: 'ml-4 mt-1 space-y-1' },
+                                        React.createElement('li', { className: 'flex items-start' },
+                                            React.createElement('span', { className: 'text-[var(--accent-color)] mr-2' }, '•'),
+                                            'API 链接：如 https://generativelanguage.googleapis.com/v1beta'
+                                        ),
+                                        React.createElement('li', { className: 'flex items-start' },
+                                            React.createElement('span', { className: 'text-[var(--accent-color)] mr-2' }, '•'),
+                                            'API Key：您的密钥'
+                                        )
+                                    )
+                                )
+                            ),
+                            React.createElement('li', { className: 'flex items-start' },
+                                React.createElement('span', { className: 'text-[var(--accent-color)] font-bold mr-2 min-w-[1.5rem]' }, '3.'),
+                                React.createElement('div', null,
+                                    React.createElement('strong', null, '获取模型列表：'), '点击"获取可用模型"按钮自动填充模型选项'
+                                )
+                            ),
+                            React.createElement('li', { className: 'flex items-start' },
+                                React.createElement('span', { className: 'text-[var(--accent-color)] font-bold mr-2 min-w-[1.5rem]' }, '4.'),
+                                React.createElement('div', null,
+                                    React.createElement('strong', null, '保存设置：'), '点击"保存设置"按钮完成配置'
+                                )
+                            )
+                        ),
+                        React.createElement(Tip, { title: '推荐 API 服务' },
+                            'Google Gemini API 提供较高的免费额度，推荐使用 Gemini 2.5 Pro 模型以获得更好的生成质量。也支持任何兼容 OpenAI 格式的 API 服务。'
                         )
                     ),
-                    React.createElement(Section, { title: '移动端体验优化' },
-                        React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
-                            React.createElement('li', null, React.createElement('strong', null, '界面自适应: '), '本应用界面已为移动设备优化，会自动调整布局以适应手机或平板屏幕。'),
-                            React.createElement('li', null, React.createElement('strong', null, '添加到主屏幕 (PWA): '), 'iOS 用户可以在 Safari 浏览器中点击分享按钮，然后选择 "添加到主屏幕"，即可像原生 App 一样使用本工具，获得沉浸式全屏体验。')
+
+                    React.createElement(Section, { title: '界面功能说明' },
+                        React.createElement('div', { className: 'space-y-3' },
+                            React.createElement('div', null,
+                                React.createElement('h4', { className: 'font-semibold mb-2' }, '顶部导航栏功能：'),
+                                React.createElement('ul', { className: 'space-y-1 text-sm' },
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-history text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '历史记录：'), '查看和加载之前的对话')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-terminal text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '开发者控制台：'), '查看详细的系统日志')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-plus text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '新对话：'), '开始全新的会话')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('div', { className: 'flex items-center mr-2 mt-0.5' },
+                                            React.createElement('i', { className: 'fa-solid fa-moon text-xs text-[var(--accent-color)]' }),
+                                            React.createElement('span', { className: 'mx-1' }, '/'),
+                                            React.createElement('i', { className: 'fa-solid fa-sun text-xs text-[var(--accent-color)]' })
+                                        ),
+                                        React.createElement('div', null, React.createElement('strong', null, '主题切换：'), '在明暗模式间切换')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-info-circle text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '教程：'), '查看本帮助信息')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-cog text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '设置：'), '配置 API 和自定义选项')
+                                    )
+                                )
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('h4', { className: 'font-semibold mb-2' }, '对话功能：'),
+                                React.createElement('ul', { className: 'space-y-1 text-sm' },
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-image text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '图片上传：'), '最多上传 3 张图片协助分析（支持拖拽）')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-redo text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '重新生成：'), '让 AI 重新回答最后一个问题')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-paper-plane text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '发送消息：'), '发送您的需求或问题')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-stop text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '停止生成：'), '中断正在进行的 AI 回复')
+                                    )
+                                )
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('h4', { className: 'font-semibold mb-2' }, '消息操作：'),
+                                React.createElement('ul', { className: 'space-y-1 text-sm' },
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-copy text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '复制：'), '复制消息内容或代码块')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-edit text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '编辑：'), '修改已发送的消息')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-trash text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '删除：'), '删除不需要的消息')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('div', { className: 'flex items-center mr-2 mt-0.5' },
+                                            React.createElement('i', { className: 'fa-solid fa-chevron-left text-xs text-[var(--accent-color)]' }),
+                                            React.createElement('span', { className: 'mx-1' }, '/'),
+                                            React.createElement('i', { className: 'fa-solid fa-chevron-right text-xs text-[var(--accent-color)]' })
+                                        ),
+                                        React.createElement('div', null, React.createElement('strong', null, '版本切换：'), '查看 AI 回复的不同版本')
+                                    )
+                                )
+                            )
                         )
                     ),
-                    React.createElement(Section, { title: 'API URL 支持格式' },
-                        React.createElement('p', null, '本工具支持多种 API 格式：'),
-                        React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
-                            React.createElement('li', null, React.createElement('strong', null, 'Google Gemini: '), '官方标准链接，例如 ', React.createElement('code', {className: 'text-xs bg-[var(--accent-light)] text-[var(--accent-dark)] p-1 rounded'}, 'https://generativelanguage.googleapis.com/v1beta')),
-                            React.createElement('li', null, React.createElement('strong', null, 'OpenAI 兼容格式: '), '任何兼容 OpenAI 聊天接口的 API。程序会自动在链接后拼接 ', React.createElement('code', {className: 'text-xs bg-[var(--accent-light)] text-[var(--accent-dark)] p-1 rounded'}, '/chat/completions'), '。请提供基础 URL，例如 ', React.createElement('code', {className: 'text-xs bg-[var(--accent-light)] text-[var(--accent-dark)] p-1 rounded'}, 'https://api.example.com/v1'))
+
+                    React.createElement(Section, { title: '高级功能配置' },
+                        React.createElement('div', { className: 'space-y-3' },
+                            React.createElement('div', null,
+                                React.createElement('h4', { className: 'font-semibold mb-2' }, '多配置管理：'),
+                                React.createElement('p', { className: 'text-sm mb-2' }, '您可以创建多套配置以适应不同的项目需求：'),
+                                React.createElement('ul', { className: 'space-y-1 text-sm ml-4' },
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('span', { className: 'text-[var(--accent-color)] mr-2 mt-0.5' }, '•'),
+                                        '为不同数据库创建专门的配置'
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('span', { className: 'text-[var(--accent-color)] mr-2 mt-0.5' }, '•'),
+                                        '设置不同的 SQL 生成规则'
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('span', { className: 'text-[var(--accent-color)] mr-2 mt-0.5' }, '•'),
+                                        '配置项目特定的术语定义'
+                                    )
+                                )
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('h4', { className: 'font-semibold mb-2' }, '自定义 AI 行为：'),
+                                React.createElement('p', { className: 'text-sm mb-2' }, '通过设置以下内容来定制 AI 的 SQL 生成风格：'),
+                                React.createElement('ul', { className: 'space-y-1 text-sm ml-4' },
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('span', { className: 'text-[var(--accent-color)] mr-2 mt-0.5' }, '•'),
+                                        React.createElement('div', null, React.createElement('strong', null, 'SQL 生成规则：'), '定义代码风格和约束')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('span', { className: 'text-[var(--accent-color)] mr-2 mt-0.5' }, '•'),
+                                        React.createElement('div', null, React.createElement('strong', null, '数据库表结构：'), '提供表名和字段信息')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('span', { className: 'text-[var(--accent-color)] mr-2 mt-0.5' }, '•'),
+                                        React.createElement('div', null, React.createElement('strong', null, '示例对话：'), '提供希望 AI 生成的 SQL 查询代码范本')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('span', { className: 'text-[var(--accent-color)] mr-2 mt-0.5' }, '•'),
+                                        React.createElement('div', null, React.createElement('strong', null, '行业术语：'), '定义业务术语，如电商行业的 ATV（平均客单价）等')
+                                    )
+                                )
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('h4', { className: 'font-semibold mb-2' }, '智能辅助功能：'),
+                                React.createElement('ul', { className: 'space-y-1 text-sm' },
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-wand-magic-sparkles text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '智能优化：'), '将文本内容自动转换为规整的 YAML 格式（需先点击确认图标 ', React.createElement('i', { className: 'fa-solid fa-check text-xs' }), ' 保存修改，再点击魔棒图标进行优化）')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-maximize text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '全屏编辑：'), '在更大的界面中编辑复杂内容')
+                                    ),
+                                    React.createElement('li', { className: 'flex items-start' },
+                                        React.createElement('i', { className: 'fa-solid fa-upload text-xs mr-2 text-[var(--accent-color)] mt-0.5' }),
+                                        React.createElement('div', null, React.createElement('strong', null, '文件上传：'), '支持 .txt, .md, .yaml, .sql, .xlsx 等格式。特别支持解析 Excel 格式的数据库表结构信息，可先上传 Excel，再点击智能优化转换为 YAML 格式')
+                                    )
+                                ),
+                                React.createElement('div', { className: 'mt-3 p-3 bg-[var(--accent-light)] rounded-lg' },
+                                    React.createElement('p', { className: 'font-semibold text-sm mb-2' }, 'Excel 表结构示例格式：'),
+                                    React.createElement('div', { className: 'overflow-x-auto' },
+                                        React.createElement('table', { className: 'w-full text-xs border-collapse border border-gray-300 dark:border-gray-600' },
+                                            React.createElement('thead', null,
+                                                React.createElement('tr', null,
+                                                    React.createElement('th', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1 text-left' }, '表名'),
+                                                    React.createElement('th', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1 text-left' }, '表含义'),
+                                                    React.createElement('th', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1 text-left' }, '字段名'),
+                                                    React.createElement('th', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1 text-left' }, '字段含义'),
+                                                    React.createElement('th', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1 text-left' }, '字段值示例')
+                                                )
+                                            ),
+                                            React.createElement('tbody', null,
+                                                React.createElement('tr', null,
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '[schema].[user_info]'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '用户信息表'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, 'user_id'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '用户ID'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '')
+                                                ),
+                                                React.createElement('tr', null,
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '[schema].[user_info]'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '用户信息表'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, 'mobile'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '手机号'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '')
+                                                ),
+                                                React.createElement('tr', null,
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '[schema].[user_info]'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '用户信息表'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, 'register_channel'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '注册渠道'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '网站, 移动端, 第三方')
+                                                ),
+                                                React.createElement('tr', null,
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '[schema].[user_info]'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '用户信息表'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, 'create_time'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, '创建时间'),
+                                                    React.createElement('td', { className: 'border border-gray-300 dark:border-gray-600 px-2 py-1' }, 'YYYY-MM-DD HH:mm:ss')
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+
+                    React.createElement(Section, { title: '使用技巧' },
+                        React.createElement('div', { className: 'space-y-3' },
+                            React.createElement(Tip, { title: '提高生成质量的建议' },
+                                '详细描述您的需求，包括表结构、预期结果和特殊要求。提供具体的业务场景比抽象的描述更有效。'
+                            ),
+                            React.createElement(Tip, { title: '充分利用对话功能' },
+                                '可以在 AI 生成初版 SQL 后，继续提出修改要求，如"添加排序"、"增加筛选条件"等，实现渐进式优化。'
+                            ),
+                            React.createElement(Tip, { title: '版本管理' },
+                                '如果对 AI 的回复不满意，可以点击重新生成获得新版本，或者使用版本切换功能比较不同的解决方案。'
+                            )
+                        )
+                    ),
+
+                    React.createElement(Section, { title: '移动端使用' },
+                        React.createElement('ul', { className: 'space-y-1 text-sm' },
+                            React.createElement('li', { className: 'flex items-start' },
+                                React.createElement('span', { className: 'text-[var(--accent-color)] mr-2 mt-0.5' }, '•'),
+                                React.createElement('div', null, React.createElement('strong', null, '响应式设计：'), '界面会自动适应手机和平板屏幕')
+                            ),
+                            React.createElement('li', { className: 'flex items-start' },
+                                React.createElement('span', { className: 'text-[var(--accent-color)] mr-2 mt-0.5' }, '•'),
+                                React.createElement('div', null,
+                                    React.createElement('strong', null, 'iOS PWA 支持：'), 'iPhone/iPad 用户可获得类似原生应用的体验：',
+                                    React.createElement('ol', { className: 'ml-4 mt-1 space-y-1 text-xs' },
+                                        React.createElement('li', { className: 'flex items-start' },
+                                            React.createElement('span', { className: 'text-[var(--accent-color)] font-bold mr-2 min-w-[1rem]' }, '1.'),
+                                            '在 Safari 浏览器中打开本工具'
+                                        ),
+                                        React.createElement('li', { className: 'flex items-start' },
+                                            React.createElement('span', { className: 'text-[var(--accent-color)] font-bold mr-2 min-w-[1rem]' }, '2.'),
+                                            React.createElement('div', null, '点击底部工具栏的分享图标 ', React.createElement('i', { className: 'fa-solid fa-share text-xs' }))
+                                        ),
+                                        React.createElement('li', { className: 'flex items-start' },
+                                            React.createElement('span', { className: 'text-[var(--accent-color)] font-bold mr-2 min-w-[1rem]' }, '3.'),
+                                            '在弹出菜单中选择"添加到主屏幕"'
+                                        ),
+                                        React.createElement('li', { className: 'flex items-start' },
+                                            React.createElement('span', { className: 'text-[var(--accent-color)] font-bold mr-2 min-w-[1rem]' }, '4.'),
+                                            '点击"添加"完成安装'
+                                        ),
+                                        React.createElement('li', { className: 'flex items-start' },
+                                            React.createElement('span', { className: 'text-[var(--accent-color)] font-bold mr-2 min-w-[1rem]' }, '5.'),
+                                            '可从主屏幕直接启动，享受全屏体验'
+                                        )
+                                    )
+                                )
+                            ),
+                            React.createElement('li', { className: 'flex items-start' },
+                                React.createElement('span', { className: 'text-[var(--accent-color)] mr-2 mt-0.5' }, '•'),
+                                React.createElement('div', null, React.createElement('strong', null, '触控优化：'), '所有按钮和交互都针对触屏设备进行了优化')
+                            )
+                        )
+                    ),
+
+                    React.createElement(Section, { title: 'API 兼容性说明' },
+                        React.createElement('p', { className: 'text-sm mb-3' }, '本工具支持多种 API 格式，您可以根据需要选择：'),
+                        React.createElement('ul', { className: 'space-y-1 text-sm' },
+                            React.createElement('li', { className: 'flex items-start' },
+                                React.createElement('span', { className: 'text-[var(--accent-color)] mr-2 mt-0.5' }, '•'),
+                                React.createElement('div', null, React.createElement('strong', null, 'Google Gemini API：'), React.createElement('br', null), React.createElement('code', { className: 'text-xs bg-[var(--accent-light)] text-[var(--accent-dark)] p-1 rounded' }, 'https://generativelanguage.googleapis.com/v1beta'), React.createElement('p', { className: 'text-xs text-gray-600 mt-1' }, '支持图片上传，免费额度较高，推荐个人用户使用'))
+                            ),
+                            React.createElement('li', { className: 'flex items-start' },
+                                React.createElement('span', { className: 'text-[var(--accent-color)] mr-2 mt-0.5' }, '•'),
+                                React.createElement('div', null, React.createElement('strong', null, 'OpenAI 兼容格式：'), React.createElement('br', null), React.createElement('code', { className: 'text-xs bg-[var(--accent-light)] text-[var(--accent-dark)] p-1 rounded' }, 'https://api.example.com/v1'), React.createElement('p', { className: 'text-xs text-gray-600 mt-1' }, '支持任何兼容 OpenAI Chat Completions API 的服务'))
+                            )
+                        )
+                    ),
+
+                    React.createElement(Section, { title: '常见问题' },
+                        React.createElement('div', { className: 'space-y-3 text-sm' },
+                            React.createElement('div', null,
+                                React.createElement('strong', null, 'Q: API 配置后无法使用怎么办？'),
+                                React.createElement('p', null, 'A: 检查 API URL 格式是否正确，API Key 是否有效，并确认网络连接正常。可查看开发者控制台获取详细错误信息。')
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('strong', null, 'Q: 如何提高生成的 SQL 质量？'),
+                                React.createElement('p', null, 'A: 在设置中提供详细的数据库表结构，设置明确的 SQL 规则，并通过示例对话展示期望的输出格式。')
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('strong', null, 'Q: 历史记录存储在哪里？'),
+                                React.createElement('p', null, 'A: 所有数据都存储在浏览器本地，不会上传到服务器。您可以通过导出功能备份配置和历史记录。')
+                            )
                         )
                     )
                 )
