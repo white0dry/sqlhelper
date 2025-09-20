@@ -655,26 +655,11 @@
             .ios-header .flex-1 {
                 flex: 1 1 0%;
             }
-            .input-area-buttons-container {
-                flex-direction: column;
-                gap: 0.5rem; /* 8px */
-            }
-            /* Make all buttons in input area same height */
-            .input-area-buttons-container .ios-button,
-            .input-area-buttons-container .ios-button-secondary {
-                width: 36px;
-                height: 36px;
-                padding: 0;
-            }
             .slide-panel {
                 max-width: 100%;
             }
             main.p-4 {
                 padding: 0.75rem; /* 12px */
-            }
-            /* Align textarea height with stacked buttons */
-            #user-query {
-                min-height: 80px; /* 36px*2 + 8px gap */
             }
             /* Make textarea placeholder and text smaller */
             .input-textarea {
@@ -684,6 +669,17 @@
             .markdown-content pre {
                 white-space: pre-wrap;
                 word-break: break-all;
+            }
+            .chat-input-container {
+                flex-direction: row;
+                align-items: flex-end;
+            }
+            .chat-input-container .input-textarea {
+                min-height: 44px;
+                height: 44px;
+            }
+            .chat-input-container .flex-shrink-0 {
+                align-self: flex-end;
             }
         }
     </style>
@@ -715,6 +711,7 @@
         const LOCAL_STORAGE_THEME_KEY = 'sql_assistant_theme_v1';
         const LOCAL_STORAGE_ACTIVE_CONVERSATION_KEY = 'sql_assistant_active_conversation_v2';
         const LOCAL_STORAGE_ACTIVE_HISTORY_ID_KEY = 'sql_assistant_active_history_id_v2';
+        const MAX_IMAGES_PER_MESSAGE = 3;
 
         const DEFAULT_SETTINGS = {
             apiUrl: 'https://generativelanguage.googleapis.com/v1beta',
@@ -936,15 +933,17 @@
                     requestUrl = `${settings.apiUrl}/models/${settings.apiModel}:streamGenerateContent?alt=sse&key=${settings.apiKey}`;
                     
                     const contents = chatHistory
-                        .filter(msg => (msg.content && msg.content.trim() !== '') || msg.image)
+                        .filter(msg => (msg.content && msg.content.trim() !== '') || (msg.images && msg.images.length > 0))
                         .map(msg => {
                             const parts = [];
-                            if (msg.image) {
-                                parts.push({
-                                    inlineData: {
-                                        mimeType: msg.image.mimeType,
-                                        data: msg.image.data
-                                    }
+                            if (msg.images && msg.images.length > 0) {
+                                msg.images.forEach(image => {
+                                    parts.push({
+                                        inlineData: {
+                                            mimeType: image.mimeType,
+                                            data: image.data
+                                        }
+                                    });
                                 });
                             }
                             if (msg.content && msg.content.trim() !== '') {
@@ -981,16 +980,18 @@
                     }
 
                     const openAICompatibleMessages = chatHistory.map(msg => {
-                        if (msg.image && msg.role === 'user') {
+                        if (msg.images && msg.images.length > 0 && msg.role === 'user') {
                             const contentParts = [];
                             if (msg.content && msg.content.trim()) {
                                 contentParts.push({ type: 'text', text: msg.content });
                             }
-                            contentParts.push({
-                                type: 'image_url',
-                                image_url: {
-                                    url: `data:${msg.image.mimeType};base64,${msg.image.data}`
-                                }
+                            msg.images.forEach(image => {
+                                contentParts.push({
+                                    type: 'image_url',
+                                    image_url: {
+                                        url: `data:${image.mimeType};base64,${image.data}`
+                                    }
+                                });
                             });
                             return { role: 'user', content: contentParts };
                         }
@@ -1025,7 +1026,7 @@
                 const response = await fetch(requestUrl, requestOptions);
 
                 if (!response.ok) {
-                    const hasImage = chatHistory.some(msg => msg.image);
+                    const hasImage = chatHistory.some(msg => msg.images && msg.images.length > 0);
                     if (hasImage && response.status >= 400 && response.status < 500) {
                          throw new Error('当前配置的API不支持图片上传功能，或图片格式/大小有误。');
                     }
@@ -1208,8 +1209,10 @@
         const SendIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: "h-5 w-5"}, React.createElement('line', { x1: "22", y1: "2", x2: "11", y2: "13" }), React.createElement('polygon', { points: "22 2 15 22 11 13 2 9 22 2" }));
         const StopIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "currentColor", className: "h-5 w-5 text-white" }, React.createElement('rect', { x: "6", y: "6", width: "12", height: "12", rx: "1" }));
         const EditIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, React.createElement('path', { d: "M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"}));
+        const DeleteIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round"}, React.createElement('polyline', {points: '3 6 5 6 21 6'}), React.createElement('path', {d: 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'}), React.createElement('line', {x1: '10', y1: '11', x2: '10', y2: '17'}), React.createElement('line', {x1: '14', y1: '11', x2: '14', y2: '17'}));
         const RegenerateIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: "h-5 w-5"}, React.createElement('path', { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" }), React.createElement('path', { d: "M21 3v5h-5" }), React.createElement('path', { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" }), React.createElement('path', { d: "M3 21v-5h5" }));
         const PlusIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round"}, React.createElement('line',{x1:"12",y1:"5",x2:"12",y2:"19"}), React.createElement('line',{x1:"5",y1:"12",x2:"19",y2:"12"}));
+        const CopyIcon = () => React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round"}, React.createElement('rect',{x:"9",y:"9",width:"13",height:"13",rx:"2",ry:"2"}), React.createElement('path',{d:"M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"}));
 
         // --- From components/Toast.tsx ---
         const Toast = ({ message }) => {
@@ -1377,79 +1380,134 @@
         };
 
         // --- From components/MainContent.tsx ---
-        const MainContent = ({ conversation, isLoading, editingIndex, editedContent, editedImage, setEditedContent, setEditedImage, onSaveEdit, onCancelEdit, onStartEdit, onSuggestionClick, isMounted, onRemoveEditedImage, onPreviewImage }) => {
+        const MainContent = ({ conversation, isLoading, editingIndex, editedContent, editedImages, setEditedContent, setEditedImages, onSaveEdit, onCancelEdit, onStartEdit, onSuggestionClick, isMounted, onRemoveEditedImage, onPreviewImage, onDeleteMessage, onShowToast, processImageFiles }) => {
             const chatContainerRef = useRef(null);
             const prevEditingIndex = useRef(null);
             const messageRefs = useRef(new Map());
             const editImageInputRef = useRef(null);
+            const [isDraggingOverEdit, setIsDraggingOverEdit] = React.useState(false);
+            const elementTopBeforeEdit = useRef(null);
 
             useLayoutEffect(() => {
                 const chatContainer = chatContainerRef.current;
                 if (!chatContainer) return;
-
-                if (prevEditingIndex.current === null && editingIndex !== null) {
+            
+                if (editingIndex !== null) {
+                    // When entering edit mode, scroll to the message being edited
                     const messageElement = messageRefs.current.get(editingIndex);
                     if (messageElement) {
                         messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
-                }
-                else if (prevEditingIndex.current !== null && editingIndex === null) {
-                }
-                else if (editingIndex === null) {
-                    setTimeout(() => {
-                        if (chatContainer?.lastElementChild) {
-                            chatContainer.lastElementChild.scrollIntoView({ behavior: 'auto', block: 'end' });
+                } else if (prevEditingIndex.current !== null) {
+                    // When finishing an edit, restore the view to where it was before editing.
+                    if (elementTopBeforeEdit.current !== null) {
+                        const messageElement = messageRefs.current.get(prevEditingIndex.current);
+                        if (messageElement) {
+                            const newRect = messageElement.getBoundingClientRect();
+                            const diff = newRect.top - elementTopBeforeEdit.current;
+                            chatContainer.scrollTop += diff;
                         }
-                    }, 0);
+                        elementTopBeforeEdit.current = null; // Reset for the next edit
+                    }
+                } else {
+                    // For all other cases (new message, initial load), scroll to the bottom.
+                    setTimeout(() => {
+                        if (chatContainer) {
+                            chatContainer.scrollTop = chatContainer.scrollHeight;
+                        }
+                    }, 0); // A timeout of 0 defers execution until the stack is clear.
                 }
-
+            
                 prevEditingIndex.current = editingIndex;
-
+            
             }, [conversation, editingIndex, isMounted]);
 
-            const startEditing = (index, content, image) => {
-                onStartEdit(index, content, image);
+            const startEditing = (index, content, images) => {
+                const messageElement = messageRefs.current.get(index);
+                if (messageElement) {
+                    elementTopBeforeEdit.current = messageElement.getBoundingClientRect().top;
+                } else {
+                    elementTopBeforeEdit.current = null;
+                }
+                onStartEdit(index, content, images);
             };
-
-            const processEditImageFile = (file) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const dataUrl = e.target.result;
-                    const base64Data = dataUrl.split(',')[1];
-                    setEditedImage({
-                        data: base64Data,
-                        mimeType: file.type,
-                        dataUrl: dataUrl
-                    });
-                };
-                reader.readAsDataURL(file);
-            };
-
+            
             const handleEditImageUpload = (event) => {
-                const file = event.target.files?.[0];
-                if (file) {
-                    processEditImageFile(file);
+                const files = event.target.files;
+                if (files && files.length > 0) {
+                    processImageFiles(files, editedImages, setEditedImages);
                 }
                 event.target.value = ''; // Allow re-uploading the same file
             };
 
             const handleEditPaste = (event) => {
                 const items = (event.clipboardData || window.clipboardData).items;
+                const files = [];
                 for (const item of items) {
                     if (item.kind === 'file' && item.type.startsWith('image/')) {
-                        const file = item.getAsFile();
-                        if (file) {
-                            processEditImageFile(file);
-                            event.preventDefault();
-                            return;
-                        }
+                         const file = item.getAsFile();
+                         if(file) files.push(file);
                     }
+                }
+                if (files.length > 0) {
+                    processImageFiles(files, editedImages, setEditedImages);
+                    event.preventDefault();
                 }
             };
 
+            const handleEditDrop = (event) => {
+                event.preventDefault();
+                setIsDraggingOverEdit(false);
+                if (editingIndex === null) return;
+            
+                const files = event.dataTransfer.files;
+                if (files && files.length > 0) {
+                    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+                    if (imageFiles.length > 0) {
+                        processImageFiles(imageFiles, editedImages, setEditedImages);
+                    } else {
+                        onShowToast('仅支持拖拽上传图片文件。');
+                    }
+                }
+            };
+            
+            const handleCopy = (text) => {
+                if (!text || typeof text !== 'string' || !text.trim()) {
+                    onShowToast('没有内容可以复制。');
+                    return;
+                }
+                navigator.clipboard.writeText(text).then(() => {
+                    onShowToast('已复制到剪贴板！');
+                }).catch(err => {
+                    onShowToast('复制失败！');
+                    console.error('Failed to copy text: ', err);
+                });
+            };
+            
+            const ImageGrid = ({images, onPreview, onRemove, inEditMode}) => {
+                if (!images || images.length === 0) return null;
+            
+                return React.createElement('div', {className: 'mb-2 flex flex-wrap gap-2'}, 
+                    images.map((image, idx) => 
+                        React.createElement('div', { key: idx, className: 'relative w-20 h-20 md:w-24 md:h-24' },
+                            React.createElement('img', { 
+                                src: image.dataUrl, 
+                                alt: `用户上传图片 ${idx + 1}`,
+                                className: 'w-full h-full object-cover rounded-lg border-2 border-white/30 cursor-pointer', 
+                                onClick: () => onPreview(image.dataUrl) 
+                            }),
+                            inEditMode && React.createElement('button', {
+                                onClick: () => onRemove(idx),
+                                className: 'absolute -top-2 -right-2 bg-[var(--danger-bg)] text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md hover:bg-[var(--danger-hover-bg)] transition',
+                                'aria-label': '移除图片'
+                            }, React.createElement('i', { className: 'fa-solid fa-xmark' }))
+                        )
+                    )
+                );
+            };
 
             return React.createElement('div', { className: 'ios-card flex flex-col flex-grow min-h-0' },
-                React.createElement('div', { ref: chatContainerRef, className: 'flex-grow overflow-y-auto p-5 space-y-6' },
+                React.createElement('div', { ref: chatContainerRef, className: 'flex-grow overflow-y-auto p-5 space-y-3' },
                     conversation.length === 0 ? (
                          React.createElement('div', { className: 'text-center text-gray-500 flex flex-col h-full' },
                             React.createElement('div', { className: 'flex-grow flex flex-col justify-center items-center' },
@@ -1481,68 +1539,77 @@
                                 }
                             };
                             if (msg.role === 'user') {
-                                return React.createElement('div', {
-                                    key: index,
-                                    ref: refCallback,
-                                    className: `flex justify-end group ${editingIndex === index ? '' : 'items-end gap-2'}`.trim()
-                                },
-                                editingIndex === index ?
-                                    React.createElement('div', { className: 'user-message p-3 w-full max-w-[75%]' },
-                                        React.createElement('input', { type: 'file', ref: editImageInputRef, className: 'hidden', accept: 'image/*', onChange: handleEditImageUpload }),
-                                        editedImage && React.createElement('div', { className: 'relative mb-2 w-24 h-24' },
-                                            React.createElement('img', { src: editedImage.dataUrl, alt: '正在编辑的图片', className: 'w-full h-full object-cover rounded-lg border-2 border-white/30 cursor-pointer', onClick: () => onPreviewImage(editedImage.dataUrl) }),
-                                            React.createElement('button', {
-                                                onClick: onRemoveEditedImage,
-                                                className: 'absolute -top-2 -right-2 bg-[var(--danger-bg)] text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md hover:bg-[var(--danger-hover-bg)] transition',
-                                                'aria-label': '移除图片'
-                                            }, React.createElement('i', { className: 'fa-solid fa-xmark' }))
-                                        ),
-                                        React.createElement('textarea', {
-                                            value: editedContent,
-                                            onChange: e => setEditedContent(e.target.value),
-                                            onPaste: handleEditPaste,
-                                            className: 'w-full bg-white/20 rounded-md p-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 editing-textarea',
-                                            rows: 3
-                                        }),
-                                        React.createElement('div', { className: 'flex justify-end items-center gap-2 mt-2' },
-                                            React.createElement('button', { onClick: () => editImageInputRef.current?.click(), className: 'h-8 text-xs px-3 py-1 rounded-lg font-semibold bg-white/20 text-white hover:bg-white/30 transition transform active:scale-95 flex items-center justify-center min-w-16' }, React.createElement('i', { className: 'fa-solid fa-image' })),
-                                            React.createElement('button', { onClick: onCancelEdit, className: 'h-8 text-xs px-3 py-1 rounded-lg font-semibold bg-gray-400 text-white hover:bg-gray-500 transition transform active:scale-95 flex items-center justify-center min-w-16' }, '取消'),
-                                            React.createElement('button', { onClick: onSaveEdit, className: 'h-8 text-xs px-3 py-1 rounded-lg font-semibold bg-white text-[var(--accent-color)] hover:bg-gray-100 transition transform active:scale-95 flex items-center justify-center min-w-16' }, '保存')
-                                        )
-                                    ) :
-                                    [
-                                        React.createElement('button', {
-                                            key: `edit-${index}`,
-                                            onClick: () => startEditing(index, msg.content, msg.image),
-                                            disabled: isLoading,
-                                            className: 'opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 hover:text-[var(--accent-color)] disabled:opacity-20 active:scale-90 mb-1 flex-shrink-0', 'aria-label': '编辑'
-                                        },
-                                            React.createElement(EditIcon, null)
-                                        ),
+                                return editingIndex === index ? (
+                                    React.createElement('div', { key: index, ref: refCallback, className: 'flex justify-end w-full' },
                                         React.createElement('div', {
-                                            key: `msg-${index}`,
-                                            className: 'user-message p-3 max-w-[75%]'
+                                            className: `user-message p-3 w-full max-w-[85%] transition-all ${isDraggingOverEdit ? 'border-2 border-dashed border-white/50 bg-white/10' : ''}`,
+                                            onDrop: handleEditDrop,
+                                            onDragOver: (e) => e.preventDefault(),
+                                            onDragEnter: (e) => { e.preventDefault(); setIsDraggingOverEdit(true); },
+                                            onDragLeave: (e) => { e.preventDefault(); setIsDraggingOverEdit(false); }
                                         },
-                                            msg.image && React.createElement('img', { src: msg.image.dataUrl, alt: '用户上传的图片', className: 'mb-2 rounded-lg max-w-full h-auto border-2 border-white/30 cursor-pointer', onClick: () => onPreviewImage(msg.image.dataUrl) }),
-                                            msg.content && React.createElement('div', { className: 'whitespace-pre-wrap break-words text-sm' }, msg.content)
+                                            React.createElement('input', { type: 'file', ref: editImageInputRef, className: 'hidden', accept: 'image/*', multiple: true, onChange: handleEditImageUpload }),
+                                            React.createElement(ImageGrid, { images: editedImages, onPreview: onPreviewImage, onRemove: onRemoveEditedImage, inEditMode: true }),
+                                            React.createElement('textarea', {
+                                                value: editedContent,
+                                                onChange: e => setEditedContent(e.target.value),
+                                                onPaste: handleEditPaste,
+                                                className: 'w-full bg-white/20 rounded-md p-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 editing-textarea',
+                                                rows: 3
+                                            }),
+                                            React.createElement('div', { className: 'flex justify-end items-center gap-2 mt-2' },
+                                                React.createElement('button', { onClick: () => editImageInputRef.current?.click(), disabled: editedImages.length >= MAX_IMAGES_PER_MESSAGE, className: 'h-8 text-xs px-3 py-1 rounded-lg font-semibold bg-white/20 text-white hover:bg-white/30 transition transform active:scale-95 flex items-center justify-center min-w-16 disabled:opacity-50 disabled:cursor-not-allowed' }, React.createElement('i', { className: 'fa-solid fa-image' })),
+                                                React.createElement('button', { onClick: onCancelEdit, className: 'h-8 text-xs px-3 py-1 rounded-lg font-semibold bg-gray-400 text-white hover:bg-gray-500 transition transform active:scale-95 flex items-center justify-center min-w-16' }, '取消'),
+                                                React.createElement('button', { onClick: onSaveEdit, className: 'h-8 text-xs px-3 py-1 rounded-lg font-semibold bg-white text-[var(--accent-color)] hover:bg-gray-100 transition transform active:scale-95 flex items-center justify-center min-w-16' }, '保存')
+                                            )
                                         )
-                                    ]
-                                )
-                            } else {
-                                return React.createElement('div', { key: index, ref: refCallback, className: 'flex justify-start' },
-                                    React.createElement('div', { className: `assistant-message p-3 w-full ${msg.isError ? 'border-l-4 border-[var(--danger-bg)]' : ''}` },
-                                        React.createElement('div', { className: 'flex justify-between items-center mb-2' },
-                                            React.createElement('span', { className: 'text-sm font-semibold text-[var(--accent-color)]' }, '助手')
-                                        ),
-                                        msg.isStreaming ?
-                                            React.createElement('pre', { className: 'p-3 overflow-x-auto text-sm mono whitespace-pre-wrap' },
-                                                React.createElement('code', null,
-                                                    msg.content,
-                                                    React.createElement('span', { className: 'inline-block w-2 h-4 bg-[var(--accent-color)] animate-pulse ml-1 align-middle' })
+                                    )
+                                ) : (
+                                    React.createElement('div', { key: index, ref: refCallback, className: 'flex justify-end' },
+                                        React.createElement('div', { className: 'flex flex-col items-end group max-w-[85%]' },
+                                            React.createElement('div', { className: 'user-message p-3' },
+                                                React.createElement(ImageGrid, { images: msg.images, onPreview: onPreviewImage, inEditMode: false }),
+                                                msg.content && React.createElement('div', { className: 'whitespace-pre-wrap break-words text-sm' }, msg.content)
+                                            ),
+                                            React.createElement('div', { className: 'flex items-center justify-end gap-2 mt-1 h-6 opacity-0 group-hover:opacity-100 transition-opacity' },
+                                                React.createElement('button', { onClick: () => handleCopy(msg.content), disabled: isLoading, className: 'p-1 text-gray-500 hover:text-[var(--accent-color)] disabled:opacity-20 active:scale-90', 'aria-label': '复制' },
+                                                    React.createElement(CopyIcon, null)
+                                                ),
+                                                React.createElement('button', { onClick: () => startEditing(index, msg.content, msg.images), disabled: isLoading, className: 'p-1 text-gray-500 hover:text-[var(--accent-color)] disabled:opacity-20 active:scale-90', 'aria-label': '编辑' },
+                                                    React.createElement(EditIcon, null)
+                                                ),
+                                                React.createElement('button', { onClick: () => onDeleteMessage(index), disabled: isLoading, className: 'p-1 text-gray-500 hover:text-[var(--danger-bg)] disabled:opacity-20 active:scale-90', 'aria-label': '删除' },
+                                                    React.createElement(DeleteIcon, null)
                                                 )
                                             )
-                                        :
-                                            React.createElement(AssistantMessageRenderer, { markdown: msg.content })
+                                        )
+                                    )
+                                );
+                            } else {
+                                return React.createElement('div', { key: index, ref: refCallback, className: 'flex justify-start' },
+                                    React.createElement('div', { className: 'flex flex-col items-start group w-full' },
+                                        React.createElement('div', { className: `assistant-message p-3 w-full ${msg.isError ? 'border-l-4 border-[var(--danger-bg)]' : ''}` },
+                                            React.createElement('div', { className: 'flex justify-between items-center mb-2' },
+                                                React.createElement('span', { className: 'text-sm font-semibold text-[var(--accent-color)]' }, '助手')
+                                            ),
+                                            msg.isStreaming ?
+                                                React.createElement('pre', { className: 'p-3 overflow-x-auto text-sm mono whitespace-pre-wrap' },
+                                                    React.createElement('code', null,
+                                                        msg.content,
+                                                        React.createElement('span', { className: 'inline-block w-2 h-4 bg-[var(--accent-color)] animate-pulse ml-1 align-middle' })
+                                                    )
+                                                )
+                                            :
+                                                React.createElement(AssistantMessageRenderer, { markdown: msg.content })
+                                        ),
+                                        React.createElement('div', { className: 'flex items-center justify-start gap-2 mt-1 h-6 opacity-0 group-hover:opacity-100 transition-opacity' },
+                                            React.createElement('button', { onClick: () => handleCopy(msg.content), disabled: isLoading, className: 'p-1 text-gray-500 hover:text-[var(--accent-color)] disabled:opacity-20 active:scale-90', 'aria-label': '复制' },
+                                                React.createElement(CopyIcon, null)
+                                            ),
+                                            React.createElement('button', { onClick: () => onDeleteMessage(index), disabled: isLoading, className: 'p-1 text-gray-500 hover:text-[var(--danger-bg)] disabled:opacity-20 active:scale-90', 'aria-label': '删除' },
+                                                React.createElement(DeleteIcon, null)
+                                            )
+                                        )
                                     )
                                 )
                             }
@@ -1558,10 +1625,10 @@
         
         // --- From components/SettingsPanel.tsx ---
         const promptFields = [
-            { key: 'guidePrompt', label: '1. SQL生成规则 (Guide Prompt)', description: 'AI将理解这是您提供的自定义SQL生成规则和要求', placeholder: '输入您的自定义引导提示...\n例如：\n规则:\n - 使用标准SQL语法...' },
-            { key: 'dbSchema', label: '2. 数据库表结构 (DB Schema)', description: 'AI将理解这是数据库的表名和字段名定义', placeholder: '输入表名和字段名...\n例如：\ntables:\n  employees:\n    - id: int...' },
-            { key: 'exampleChat', label: '3. 示例对话 (Example Chat)', description: 'AI将参考这些示例来理解您的查询模式', placeholder: '输入示例对话...\n例如：\n- 用户: 查询所有员工\n  SQL: SELECT * FROM employees' },
-            { key: 'terminology', label: '4. 行业术语定义 (Terminology)', description: 'AI将根据这些定义理解特定的业务术语', placeholder: '输入行业术语及其定义...\n例如：\n术语:\n  KPI: 关键绩效指标' },
+            { key: 'guidePrompt', label: '1. SQL生成规则 (Guide Prompt)', description: 'AI将理解这是您提供的自定义SQL生成规则和要求', placeholder: '输入您的自定义引导提示... (或拖拽文件至此)\n例如：\n规则:\n - 使用标准SQL语法...' },
+            { key: 'dbSchema', label: '2. 数据库表结构 (DB Schema)', description: 'AI将理解这是数据库的表名和字段名定义', placeholder: '输入表名和字段名... (或拖拽文件至此)\n例如：\ntables:\n  employees:\n    - id: int...' },
+            { key: 'exampleChat', label: '3. 示例对话 (Example Chat)', description: 'AI将参考这些示例来理解您的查询模式', placeholder: '输入示例对话... (或拖拽文件至此)\n例如：\n- 用户: 查询所有员工\n  SQL: SELECT * FROM employees' },
+            { key: 'terminology', label: '4. 行业术语定义 (Terminology)', description: 'AI将根据这些定义理解特定的业务术语', placeholder: '输入行业术语及其定义... (或拖拽文件至此)\n例如：\n术语:\n  KPI: 关键绩效指标' },
         ];
 
         const SettingsPanel = ({ isOpen, onClose, activeProfile, profiles, onSave, onSwitch, onCreate, onDelete, onRename, onExport, onExportAll, onShowToast }) => {
@@ -1573,6 +1640,7 @@
             const [isFetchingModels, setIsFetchingModels] = useState(false);
             const [fullscreenPrompt, setFullscreenPrompt] = useState(null);
             const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+            const [draggingOverKey, setDraggingOverKey] = useState(null);
 
             useEffect(() => {
                 setCurrentSettings(activeProfile.settings);
@@ -1609,6 +1677,12 @@
                     try {
                         let content;
                         const fileName = file.name.toLowerCase();
+                        const allowedExtensions = ['.txt', '.md', '.yaml', '.yml', '.sql', '.xlsx', '.xls'];
+                        const fileExtension = '.' + fileName.split('.').pop();
+
+                        if (!allowedExtensions.includes(fileExtension)) {
+                             throw new Error(`不支持的文件类型: ${fileExtension}。请上传 ${allowedExtensions.join(', ')} 格式的文件。`);
+                        }
 
                         if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
                             if (!window.XLSX) {
@@ -1626,6 +1700,27 @@
                     }
                 }
                 e.target.value = ''; // Allow re-uploading the same file
+            };
+
+            const handleDragOver = (e) => e.preventDefault();
+            const handleDragEnter = (e, key) => {
+                e.preventDefault();
+                setDraggingOverKey(key);
+            };
+            const handleDragLeave = (e) => {
+                e.preventDefault();
+                setDraggingOverKey(null);
+            };
+            const handleDrop = (e, key) => {
+                e.preventDefault();
+                setDraggingOverKey(null);
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    const fakeEvent = {
+                        target: { files }
+                    };
+                    handleFileChange(fakeEvent, key);
+                }
             };
             
             const handleSaveNewProfile = () => {
@@ -1880,7 +1975,14 @@
                                     )
                                 ),
                                 ...promptFields.map(({key, label, description, placeholder}) => (
-                                    React.createElement('div', { key: key, className: 'ios-card p-5 relative' },
+                                    React.createElement('div', { 
+                                        key: key, 
+                                        className: `ios-card p-5 relative transition-all ${draggingOverKey === key ? 'border-2 border-dashed border-[var(--accent-color)] bg-[var(--accent-light)]' : ''}`,
+                                        onDragOver: handleDragOver,
+                                        onDragEnter: (e) => handleDragEnter(e, key),
+                                        onDragLeave: handleDragLeave,
+                                        onDrop: (e) => handleDrop(e, key)
+                                    },
                                         React.createElement('button', {
                                             onClick: () => setFullscreenPrompt({ key, label, content: currentSettings[key] }),
                                             className: 'absolute top-4 right-4 text-gray-400 hover:text-[var(--accent-color)] transition-colors z-10 p-2',
@@ -2212,9 +2314,9 @@
                         React.createElement('p', null, '欢迎使用 SQL 自动化编写助手！本工具旨在帮助您通过自然语言快速生成和优化 SQL 查询。'),
                         React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
                             React.createElement('li', null, React.createElement('strong', null, '对话式生成: '), '在下方的输入框中输入数据需求，点击发送即可生成 SQL。'),
-                            React.createElement('li', null, React.createElement('strong', null, '图片上传: '), '点击输入框旁的图片图标，可以上传图片与文字一同分析 (仅支持 Gemini 等识图模型)。'),
+                            React.createElement('li', null, React.createElement('strong', null, '图片上传: '), '点击输入框旁的图片图标，可以上传最多3张图片与文字一同分析 (仅支持 Gemini 等识图模型)。也支持拖拽图片到输入框区域上传。'),
                             React.createElement('li', null, React.createElement('strong', null, '持续优化: '), '可以继续输入指令，对已生成的 SQL 进行修改，例如 "添加 xx 条件" 或 "按 xx 排序"。'),
-                            React.createElement('li', null, React.createElement('strong', null, '编辑与重生成: '), '将鼠标悬停在消息上可点击铅笔图标进行编辑。也可以点击 "重新生成" 按钮让 AI 重新回答最后一个问题。'),
+                            React.createElement('li', null, React.createElement('strong', null, '编辑、删除与重生成: '), '将鼠标悬停在消息上可点击铅笔图标进行编辑或垃圾桶图标删除。也可以点击 "重新生成" 按钮让 AI 重新回答最后一个问题。'),
                             React.createElement('li', null, React.createElement('strong', null, '复制代码块: '), 'AI 回复的代码块右上角会出现复制按钮，方便一键复制代码。'),
                             React.createElement('li', null, React.createElement('strong', null, '新对话: '), '点击标题栏左侧的 "+" 图标会将当前对话存入历史记录，并开始一个全新的会话。'),
                             React.createElement('li', null, React.createElement('strong', null, '历史记录: '), '点击标题栏左侧的时钟图标，可以查看、加载、或删除最近的对话。新增搜索功能，可快速查找历史会话。'),
@@ -2225,7 +2327,7 @@
                          React.createElement('ul', { className: 'list-disc list-inside space-y-1' },
                             React.createElement('li', null, React.createElement('strong', null, '多套配置: '), '点击标题栏右侧的齿轮图标，可以创建多套配置方案，以适应不同的数据库或项目需求。'),
                             React.createElement('li', null, React.createElement('strong', null, '历史记录数量: '), '现在您可以在“配置管理”中设置要保存的最大历史对话条数。'),
-                            React.createElement('li', null, React.createElement('strong', null, '自定义 Prompt: '), '通过修改SQL生成规则、数据库结构等信息，可以定制 AI 的行为，使其生成更符合需求的 SQL。支持上传文件 (.txt, .md, .yaml, .sql, .xlsx, .xls)。'),
+                            React.createElement('li', null, React.createElement('strong', null, '自定义 Prompt: '), '通过修改SQL生成规则、数据库结构等信息，可以定制 AI 的行为，使其生成更符合需求的 SQL。支持上传文件 (.txt, .md, .yaml, .sql, .xlsx, .xls)，也支持直接拖拽文件到输入框。'),
                             React.createElement('li', null, React.createElement('strong', null, '智能优化: '), '点击 Prompt 输入框下方的 "智能优化" 按钮，可利用 AI 自动将输入或上传的文本内容（如数据库结构、术语定义等）优化为更规整、更易于 AI 理解的 YAML 格式。'),
                              React.createElement('li', null, React.createElement('strong', null, '全屏编辑: '), '点击 Prompt 输入框右上角的放大图标，可以在一个更大的、更专注的视图中编辑内容。'),
                              React.createElement('li', null, React.createElement('strong', null, '批量导入/导出: '), '可以一次性选择多个配置文件进行导入。导出时，也可以选择仅导出当前配置或一次性导出所有配置的多个对应json文件。'),
@@ -2253,20 +2355,25 @@
         };
 
         // --- From App.tsx ---
-        const ChatImagePreview = ({ image, onRemove, onPreview }) => {
-            if (!image) return null;
-            return React.createElement('div', { className: 'relative mb-2 w-24 h-24' },
-                React.createElement('img', { 
-                    src: image.dataUrl, 
-                    alt: '上传的图片预览', 
-                    className: 'w-full h-full object-cover rounded-lg border border-[var(--border-color)] cursor-pointer',
-                    onClick: () => onPreview(image.dataUrl)
-                }),
-                React.createElement('button', {
-                    onClick: onRemove,
-                    className: 'absolute -top-2 -right-2 bg-[var(--danger-bg)] text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md hover:bg-[var(--danger-hover-bg)] transition',
-                    'aria-label': '移除图片'
-                }, React.createElement('i', { className: 'fa-solid fa-xmark' }))
+        const ImagePreviewGrid = ({ images, onRemove, onPreview }) => {
+            if (!images || images.length === 0) return null;
+
+            return React.createElement('div', { className: 'mb-2 flex gap-2' },
+                images.map((image, idx) => 
+                    React.createElement('div', { key: idx, className: 'relative flex-1 aspect-square' },
+                        React.createElement('img', { 
+                            src: image.dataUrl, 
+                            alt: `上传图片预览 ${idx + 1}`,
+                            className: 'w-full h-full object-cover rounded-lg border border-[var(--border-color)] cursor-pointer',
+                            onClick: () => onPreview(image.dataUrl)
+                        }),
+                        React.createElement('button', {
+                            onClick: () => onRemove(idx),
+                            className: 'absolute -top-2 -right-2 bg-[var(--danger-bg)] text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md hover:bg-[var(--danger-hover-bg)] transition',
+                            'aria-label': '移除图片'
+                        }, React.createElement('i', { className: 'fa-solid fa-xmark' }))
+                    )
+                )
             );
         };
 
@@ -2291,10 +2398,11 @@
             const [isLoading, setIsLoading] = useState(false);
             const [editingIndex, setEditingIndex] = useState(null);
             const [editedContent, setEditedContent] = useState('');
-            const [editedImage, setEditedImage] = useState(null);
-            const [chatImage, setChatImage] = useState(null);
+            const [editedImages, setEditedImages] = useState([]);
+            const [chatImages, setChatImages] = useState([]);
             const abortControllerRef = useRef(null);
             const imageInputRef = useRef(null);
+            const [isDraggingOver, setIsDraggingOver] = useState(false);
 
             const isLastMessageFromUser = useMemo(() => {
                 return conversation.length > 0 && conversation[conversation.length - 1].role === 'user';
@@ -2443,18 +2551,20 @@
                 }
             };
 
-            const handleRemoveEditedImage = () => setEditedImage(null);
+            const handleRemoveEditedImage = (indexToRemove) => {
+                setEditedImages(prev => prev.filter((_, index) => index !== indexToRemove));
+            };
 
             const handleCancelEdit = () => {
                 setEditingIndex(null);
                 setEditedContent('');
-                setEditedImage(null);
+                setEditedImages([]);
             };
 
             const handleNewChat = useCallback(() => {
                 _setConversation([]);
                 setUserQuery('');
-                setChatImage(null);
+                setChatImages([]);
                 setActiveHistoryId(null);
                 handleStop();
                 handleCancelEdit();
@@ -2464,6 +2574,12 @@
                 _setConversation(conversationToLoad);
                 setActiveHistoryId(historyId);
             }, [_setConversation, setActiveHistoryId]);
+            
+            const handleDeleteMessage = (indexToDelete) => {
+                if (window.confirm('您确定要删除这条消息吗？')) {
+                    setConversation(prev => prev.filter((_, index) => index !== indexToDelete));
+                }
+            };
 
             const runGeneration = useCallback(async (chatHistoryForApi, isRegeneration = false, regenerationIndex = -1) => {
                 try {
@@ -2541,26 +2657,22 @@
                     }]);
                 }
             }, [activeProfile, _setConversation, setConversation]);
-
+            
             const handleSendMessage = useCallback(async () => {
                 const trimmedQuery = userQuery.trim();
                 let chatHistoryForApi;
 
-                if (trimmedQuery || chatImage) {
-                    const userMessage = { role: 'user', content: trimmedQuery };
-                    if (chatImage) {
-                        userMessage.image = chatImage;
-                    }
+                if (trimmedQuery || chatImages.length > 0) {
+                    const userMessage = { role: 'user', content: trimmedQuery, images: chatImages };
                     chatHistoryForApi = [...conversation, userMessage];
                     setConversation(chatHistoryForApi);
                     setUserQuery('');
-                    setChatImage(null);
+                    setChatImages([]);
                     
                     const textarea = document.getElementById('user-query');
                     if (textarea) {
                         textarea.style.height = 'auto';
-                        const isMobile = window.innerWidth <= 768;
-                        textarea.style.height = isMobile ? '80px' : '44px';
+                        textarea.style.height = `${textarea.minHeight || 44}px`;
                     }
                 } else if (isLastMessageFromUser) {
                     chatHistoryForApi = conversation;
@@ -2570,12 +2682,12 @@
                 }
                 
                 await runGeneration(chatHistoryForApi, false);
-            }, [userQuery, chatImage, conversation, setConversation, runGeneration, isLastMessageFromUser]);
+            }, [userQuery, chatImages, conversation, setConversation, runGeneration, isLastMessageFromUser]);
 
             const handleSaveEdit = useCallback(() => {
                 if (editingIndex === null) return;
                 const trimmedContent = editedContent.trim();
-                if (!trimmedContent && !editedImage) {
+                if (!trimmedContent && editedImages.length === 0) {
                     alert('内容和图片不能都为空！');
                     return;
                 }
@@ -2585,11 +2697,11 @@
                 const updatedMessage = { 
                     ...originalMessage,
                     content: trimmedContent, 
-                    image: editedImage 
+                    images: editedImages 
                 };
 
-                if (!updatedMessage.image) {
-                    delete updatedMessage.image;
+                if (updatedMessage.images.length === 0) {
+                    delete updatedMessage.images;
                 }
 
                 updatedConversation[editingIndex] = updatedMessage;
@@ -2597,8 +2709,8 @@
                 setConversation(updatedConversation);
                 setEditingIndex(null);
                 setEditedContent('');
-                setEditedImage(null);
-            }, [editingIndex, editedContent, editedImage, conversation, setConversation]);
+                setEditedImages([]);
+            }, [editingIndex, editedContent, editedImages, conversation, setConversation]);
             
             const handleSuggestionClick = useCallback(async (prompt) => {
                 const trimmedQuery = prompt.trim();
@@ -2610,7 +2722,7 @@
                     
                     setConversation(chatHistoryForApi);
                     setUserQuery('');
-                    setChatImage(null);
+                    setChatImages([]);
             
                     await runGeneration(chatHistoryForApi, false);
                 } catch (error) {
@@ -2636,9 +2748,8 @@
                 
                 const textarea = document.getElementById('user-query');
                 if (textarea) {
-                     textarea.style.height = 'auto';
-                    const isMobile = window.innerWidth <= 768;
-                    textarea.style.height = isMobile ? '80px' : '44px';
+                    textarea.style.height = 'auto';
+                    textarea.style.height = `${textarea.minHeight || 44}px`;
                 }
 
                 const chatHistoryForApi = conversation.slice(0, lastUserMessageIndex + 1);
@@ -2652,47 +2763,87 @@
                 }
             };
             
-            const handleStartEdit = (index, content, image) => {
+            const handleStartEdit = (index, content, images) => {
                 setEditingIndex(index);
                 setEditedContent(content);
-                setEditedImage(image || null);
+                setEditedImages(images || []);
             };
 
-            const processImageFile = (file, imageSetter) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const dataUrl = e.target.result;
-                    const base64Data = dataUrl.split(',')[1];
-                    imageSetter({
-                        data: base64Data,
-                        mimeType: file.type,
-                        dataUrl: dataUrl
-                    });
-                };
-                reader.readAsDataURL(file);
-            };
+            const processImageFiles = useCallback((files, currentImages, setImageState) => {
+                const availableSlots = MAX_IMAGES_PER_MESSAGE - currentImages.length;
+                if (availableSlots <= 0) {
+                    showToast(`每条消息最多上传 ${MAX_IMAGES_PER_MESSAGE} 张图片。`);
+                    return;
+                }
+            
+                const filesToProcess = Array.from(files).slice(0, availableSlots);
+                if (files.length > availableSlots) {
+                    showToast(`已达到 ${MAX_IMAGES_PER_MESSAGE} 张图片上限，只添加了前 ${availableSlots} 张。`);
+                }
+            
+                filesToProcess.forEach(file => {
+                    if (!file.type.startsWith('image/')) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const dataUrl = e.target.result;
+                        const base64Data = dataUrl.split(',')[1];
+                        const newImage = {
+                            data: base64Data,
+                            mimeType: file.type,
+                            dataUrl: dataUrl
+                        };
+                        setImageState(prev => [...prev, newImage]);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }, [showToast]);
 
             const handleImageUpload = (event) => {
-                const file = event.target.files?.[0];
-                if (file) {
-                    processImageFile(file, setChatImage);
+                const files = event.target.files;
+                if (files && files.length > 0) {
+                    processImageFiles(files, chatImages, setChatImages);
                 }
                 event.target.value = ''; // Allow re-uploading the same file
             };
             
             const handlePaste = (event) => {
                 const items = (event.clipboardData || window.clipboardData).items;
+                const files = [];
                 for (const item of items) {
                     if (item.kind === 'file' && item.type.startsWith('image/')) {
-                        const file = item.getAsFile();
-                        if (file) {
-                            processImageFile(file, setChatImage);
-                            event.preventDefault();
-                            return;
-                        }
+                         const file = item.getAsFile();
+                         if(file) files.push(file);
+                    }
+                }
+                if (files.length > 0) {
+                    processImageFiles(files, chatImages, setChatImages);
+                    event.preventDefault();
+                }
+            };
+
+            const handleDrop = (e) => {
+                e.preventDefault();
+                setIsDraggingOver(false);
+                if (isLoading || editingIndex !== null) return;
+            
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+                     if (imageFiles.length > 0) {
+                        processImageFiles(imageFiles, chatImages, setChatImages);
+                    } else {
+                        showToast('仅支持拖拽上传图片文件。');
                     }
                 }
             };
+            const handleDragOver = (e) => e.preventDefault();
+            const handleDragEnter = (e) => {
+                e.preventDefault();
+                if (!isLoading && editingIndex === null) {
+                    setIsDraggingOver(true);
+                }
+            };
+            const handleDragLeave = (e) => setIsDraggingOver(false);
 
             const handleSaveProfileSettings = (updatedSettings) => {
                 const updatedProfiles = profiles.map(p =>
@@ -2800,30 +2951,39 @@
                             isLoading: isLoading,
                             editingIndex: editingIndex,
                             editedContent: editedContent,
-                            editedImage: editedImage,
+                            editedImages: editedImages,
                             setEditedContent: setEditedContent,
-                            setEditedImage: setEditedImage,
+                            setEditedImages: setEditedImages,
                             onSaveEdit: handleSaveEdit,
                             onCancelEdit: handleCancelEdit,
                             onStartEdit: handleStartEdit,
                             onSuggestionClick: handleSuggestionClick,
                             isMounted: isMounted,
                             onRemoveEditedImage: handleRemoveEditedImage,
-                            onPreviewImage: (url) => setPreviewImageUrl(url)
+                            onPreviewImage: (url) => setPreviewImageUrl(url),
+                            onDeleteMessage: handleDeleteMessage,
+                            onShowToast: showToast,
+                            processImageFiles: processImageFiles
                         })
                     ),
                     React.createElement('div', { className: 'flex-shrink-0 bg-transparent z-10' },
-                        React.createElement('div', { className: 'p-4 max-w-4xl mx-auto w-full' },
-                            React.createElement('div', { className: 'ios-card p-4' },
-                                React.createElement(ChatImagePreview, { 
-                                    image: chatImage, 
-                                    onRemove: () => setChatImage(null),
+                         React.createElement('div', {
+                            className: 'p-4 max-w-4xl mx-auto w-full',
+                            onDrop: handleDrop,
+                            onDragOver: handleDragOver,
+                            onDragEnter: handleDragEnter,
+                            onDragLeave: handleDragLeave
+                        },
+                            React.createElement('div', { className: `ios-card p-2 md:p-4 transition-all ${isDraggingOver ? 'border-2 border-dashed border-[var(--accent-color)] bg-[var(--accent-light)]' : ''}` },
+                                React.createElement(ImagePreviewGrid, { 
+                                    images: chatImages, 
+                                    onRemove: (index) => setChatImages(prev => prev.filter((_, i) => i !== index)),
                                     onPreview: (url) => setPreviewImageUrl(url)
                                 }),
-                                React.createElement('div', { className: 'flex items-end gap-3' },
+                                React.createElement('div', { className: 'chat-input-container flex items-end gap-2 md:gap-3' },
                                     React.createElement('textarea', {
                                         id: 'user-query',
-                                        className: 'input-textarea w-full p-3 text-base resize-none max-h-40 h-11',
+                                        className: 'input-textarea w-full p-3 text-base resize-none max-h-40',
                                         placeholder: '继续输入以改进SQL，或开始新对话... (Shift+Enter 换行)',
                                         rows: 1,
                                         value: userQuery,
@@ -2838,10 +2998,10 @@
                                     }),
                                     isLoading
                                         ? React.createElement('button', { onClick: handleStop, className: 'ios-button danger h-11 w-11 p-0 flex-shrink-0' }, React.createElement(StopIcon))
-                                        : React.createElement('div', { className: 'input-area-buttons-container flex items-center gap-2 flex-shrink-0' },
+                                        : React.createElement('div', { className: 'flex items-center gap-2 flex-shrink-0' },
                                             React.createElement('button', {
                                                 onClick: () => imageInputRef.current?.click(),
-                                                disabled: isLoading || editingIndex !== null,
+                                                disabled: isLoading || editingIndex !== null || chatImages.length >= MAX_IMAGES_PER_MESSAGE,
                                                 className: 'ios-button ios-button-secondary h-11 w-11 p-0',
                                                 'aria-label': '上传图片'
                                             }, React.createElement('i', { className: 'fa-solid fa-image' })),
@@ -2850,6 +3010,7 @@
                                                 ref: imageInputRef,
                                                 className: 'hidden',
                                                 accept: 'image/*',
+                                                multiple: true,
                                                 onChange: handleImageUpload
                                             }),
                                             React.createElement('button', {
@@ -2860,7 +3021,7 @@
                                             }, React.createElement(RegenerateIcon)),
                                             React.createElement('button', {
                                                 onClick: handleSendMessage,
-                                                disabled: (!userQuery.trim() && !chatImage && !isLastMessageFromUser) || editingIndex !== null,
+                                                disabled: (!userQuery.trim() && chatImages.length === 0 && !isLastMessageFromUser) || editingIndex !== null,
                                                 className: 'ios-button h-11 w-11 p-0'
                                             }, React.createElement(SendIcon))
                                         )
