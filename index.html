@@ -592,7 +592,7 @@
             transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .thinking-process-container.expanded {
-            max-height: 2000px; /* 足够大的值来容纳内容 */
+            max-height: 10000px; /* 足够大的值来容纳内容 */
         }
 
         .thinking-process-content {
@@ -1341,7 +1341,7 @@
                 const codeBlockRegex = /```(?:[a-zA-Z]*)?\n[\s\S]*?\n```/g;
                 const matches = [...fullMarkdown.matchAll(codeBlockRegex)];
 
-                if (matches.length <= 1) {
+                if (matches.length === 0) {
                     return { thinkingProcess: null, finalAnswer: fullMarkdown };
                 }
 
@@ -1367,7 +1367,37 @@
         };
 
         // --- From components/MainContent.tsx ---
-        const MainContent = ({ conversation, isLoading, editingIndex, editedContent, editedImages, setEditedContent, setEditedImages, onSaveEdit, onCancelEdit, onStartEdit, onSuggestionClick, isMounted, onRemoveEditedImage, onPreviewImage, onDeleteMessage, onShowToast, processImageFiles }) => {
+        const VersionSwitcher = ({ message, messageIndex, onSwitchVersion, onRegenerate, isStreaming }) => {
+            if (!message.versions || (message.versions.length <= 1 && !isStreaming)) return null;
+        
+            const totalVersions = message.versions.length;
+            const currentIndex = (message.currentVersionIndex || 0) + 1;
+            const isLastVersion = currentIndex === totalVersions;
+        
+            const leftDisabled = currentIndex === 1 || isStreaming;
+            const rightDisabled = isStreaming;
+        
+            // When streaming, all elements should have a consistent 'disabled' look.
+            // In light mode, text-gray-400 is a good disabled color.
+            // In dark mode, text-gray-600 is a good disabled color.
+            const containerClasses = `flex items-center gap-2 transition-all text-gray-500 dark:text-gray-400 ${isStreaming ? 'opacity-20' : ''}`;
+        
+            return React.createElement('div', { className: containerClasses },
+                React.createElement('button', {
+                    onClick: () => onSwitchVersion(messageIndex, 'prev'),
+                    disabled: leftDisabled,
+                    className: 'p-1 hover:text-[var(--accent-color)] disabled:cursor-not-allowed'
+                }, React.createElement('i', { className: 'fas fa-chevron-left' })),
+                React.createElement('span', { className: 'text-sm font-mono text-inherit' }, `${currentIndex}/${totalVersions}`),
+                React.createElement('button', {
+                    onClick: isLastVersion ? onRegenerate : () => onSwitchVersion(messageIndex, 'next'),
+                    disabled: rightDisabled,
+                    className: 'p-1 hover:text-[var(--accent-color)] disabled:cursor-not-allowed'
+                }, React.createElement('i', { className: 'fas fa-chevron-right' }))
+            );
+        };
+        
+        const MainContent = ({ conversation, isLoading, editingIndex, editedContent, editedImages, setEditedContent, setEditedImages, onSaveEdit, onCancelEdit, onStartEdit, onSuggestionClick, isMounted, onRemoveEditedImage, onPreviewImage, onDeleteMessage, onShowToast, processImageFiles, onSwitchVersion, onRegenerate }) => {
             const chatContainerRef = useRef(null);
             const prevEditingIndex = useRef(null);
             const messageRefs = useRef(new Map());
@@ -1590,6 +1620,13 @@
                                                 React.createElement(AssistantMessageRenderer, { markdown: msg.content })
                                         ),
                                         React.createElement('div', { className: 'flex items-center justify-start gap-2 mt-1 h-6 opacity-0 group-hover:opacity-100 transition-opacity' },
+                                            (index === conversation.length - 1) && React.createElement(VersionSwitcher, {
+                                                message: msg,
+                                                messageIndex: index,
+                                                onSwitchVersion: onSwitchVersion,
+                                                onRegenerate: onRegenerate,
+                                                isStreaming: !!msg.isStreaming
+                                            }),
                                             React.createElement('button', { onClick: () => handleCopy(msg.content), disabled: isLoading, className: 'p-1 text-gray-500 hover:text-[var(--accent-color)] disabled:opacity-20 active:scale-90', 'aria-label': '复制' },
                                                 React.createElement(CopyIcon, null)
                                             ),
@@ -2568,7 +2605,22 @@
                 }
             };
 
-            const runGeneration = useCallback(async (chatHistoryForApi, isRegeneration = false, regenerationIndex = -1) => {
+            const prepareChatHistoryForApi = useCallback((chatHistory) => {
+                return chatHistory.map(msg => {
+                    const newMsg = { ...msg };
+                    if (newMsg.role === 'assistant' && Array.isArray(newMsg.versions) && typeof newMsg.currentVersionIndex === 'number') {
+                        const selectedVersion = newMsg.versions[newMsg.currentVersionIndex];
+                        if (selectedVersion) {
+                            newMsg.content = selectedVersion.content;
+                        }
+                    }
+                    delete newMsg.versions;
+                    delete newMsg.currentVersionIndex;
+                    return newMsg;
+                });
+            }, []);
+
+            const runGeneration = useCallback(async (chatHistoryForApi) => {
                 try {
                     const activeSettings = activeProfile.settings;
                     if (!activeSettings.apiUrl || !activeSettings.apiKey) {
@@ -2580,11 +2632,7 @@
                     setIsLoading(true);
                     abortControllerRef.current = new AbortController();
             
-                    const baseUpdater = (prev) => {
-                        const conversationSlice = isRegeneration ? prev.slice(0, regenerationIndex + 1) : prev;
-                        return [...conversationSlice, { role: 'assistant', content: '', isStreaming: true }];
-                    };
-                    isRegeneration ? _setConversation(baseUpdater) : setConversation(baseUpdater);
+                    setConversation(prev => [...prev, { role: 'assistant', content: '', isStreaming: true }]);
                     
                     const onChunk = (chunk) => {
                         _setConversation(prev => {
@@ -2668,8 +2716,8 @@
                     return;
                 }
                 
-                await runGeneration(chatHistoryForApi, false);
-            }, [userQuery, chatImages, conversation, setConversation, runGeneration, isLastMessageFromUser]);
+                await runGeneration(prepareChatHistoryForApi(chatHistoryForApi));
+            }, [userQuery, chatImages, conversation, setConversation, runGeneration, isLastMessageFromUser, prepareChatHistoryForApi]);
 
             const handleSaveEdit = useCallback(() => {
                 if (editingIndex === null) return;
@@ -2711,7 +2759,7 @@
                     setUserQuery('');
                     setChatImages([]);
             
-                    await runGeneration(chatHistoryForApi, false);
+                    await runGeneration(prepareChatHistoryForApi(chatHistoryForApi));
                 } catch (error) {
                     console.error('Error in handleSuggestionClick:', error);
                     setConversation(prev => [...prev, { 
@@ -2721,27 +2769,125 @@
                         isStreaming: false 
                     }]);
                 }
-            }, [isLoading, setConversation, runGeneration]);
+            }, [isLoading, setConversation, runGeneration, prepareChatHistoryForApi]);
 
             const handleRegenerateLastResponse = useCallback(async () => {
-                let lastUserMessageIndex = -1;
-                for (let i = conversation.length - 1; i >= 0; i--) {
-                    if (conversation[i].role === 'user') {
-                        lastUserMessageIndex = i;
-                        break;
-                    }
-                }
-                if (lastUserMessageIndex === -1) return;
-                
-                const textarea = document.getElementById('user-query');
-                if (textarea) {
-                    textarea.style.height = 'auto';
-                    textarea.style.height = `${textarea.minHeight || 44}px`;
-                }
+                const lastAssistantMessageIndex = conversation.findLastIndex(m => m.role === 'assistant');
 
-                const chatHistoryForApi = conversation.slice(0, lastUserMessageIndex + 1);
-                await runGeneration(chatHistoryForApi, true, lastUserMessageIndex);
-            }, [conversation, runGeneration]);
+                if (lastAssistantMessageIndex === -1) {
+                    showToast('没有可重新生成的消息。');
+                    return;
+                }
+                
+                const lastUserMessageIndex = conversation.slice(0, lastAssistantMessageIndex).findLastIndex(m => m.role === 'user');
+                const chatHistoryForApi = conversation.slice(0, lastUserMessageIndex === -1 ? lastAssistantMessageIndex : lastUserMessageIndex + 1);
+
+                setConversation(prev => {
+                    const newConvo = [...prev];
+                    const targetMsg = { ...newConvo[lastAssistantMessageIndex] };
+                    
+                    if (!targetMsg.versions) {
+                        targetMsg.versions = [{ content: targetMsg.content }];
+                    }
+                    const newVersionIndex = targetMsg.versions.length;
+                    targetMsg.versions.push({ content: '' });
+                    targetMsg.content = '';
+                    targetMsg.currentVersionIndex = newVersionIndex;
+                    targetMsg.isStreaming = true;
+                    targetMsg.isError = false;
+                    
+                    newConvo[lastAssistantMessageIndex] = targetMsg;
+                    return newConvo;
+                });
+
+                setIsLoading(true);
+                abortControllerRef.current = new AbortController();
+
+                const onChunk = (chunk) => {
+                    setConversation(prev => {
+                        const newConvo = [...prev];
+                        const targetMsg = newConvo[lastAssistantMessageIndex];
+                        if (targetMsg && targetMsg.isStreaming) {
+                            const updatedMsg = { ...targetMsg };
+                            const currentVersion = updatedMsg.versions[updatedMsg.currentVersionIndex];
+                            currentVersion.content += chunk;
+                            updatedMsg.content = currentVersion.content;
+                            newConvo[lastAssistantMessageIndex] = updatedMsg;
+                            return newConvo;
+                        }
+                        return prev;
+                    });
+                };
+
+                const onComplete = () => {
+                    setConversation(prev => {
+                        const newConvo = [...prev];
+                        const targetMsg = newConvo[lastAssistantMessageIndex];
+                        if (targetMsg) {
+                            const updatedMsg = { ...targetMsg, isStreaming: false };
+                            newConvo[lastAssistantMessageIndex] = updatedMsg;
+                            return newConvo;
+                        }
+                        return prev;
+                    });
+                    setIsLoading(false);
+                    abortControllerRef.current = null;
+                };
+
+                const onError = (error) => {
+                    setConversation(prev => {
+                        const newConvo = [...prev];
+                        const targetMsg = newConvo[lastAssistantMessageIndex];
+                        if (targetMsg) {
+                            const isAbort = error instanceof Error && error.name === 'AbortError';
+                            const errorContent = isAbort ? '-- 生成已手动停止 --' : `-- 生成 SQL 时出错 --\n${error.message}`;
+                            const updatedMsg = { ...targetMsg, isStreaming: false, isError: true };
+                            const currentVersion = updatedMsg.versions[updatedMsg.currentVersionIndex];
+                            currentVersion.content += `\n\n${errorContent}`;
+                            updatedMsg.content = currentVersion.content;
+                            newConvo[lastAssistantMessageIndex] = updatedMsg;
+                            return newConvo;
+                        }
+                        return prev;
+                    });
+                    setIsLoading(false);
+                    abortControllerRef.current = null;
+                };
+                
+                await generateSqlStream(
+                    prepareChatHistoryForApi(chatHistoryForApi),
+                    activeProfile.settings,
+                    abortControllerRef.current.signal,
+                    onChunk,
+                    onComplete,
+                    onError
+                );
+            }, [conversation, setConversation, activeProfile.settings, showToast, prepareChatHistoryForApi]);
+
+            const handleSwitchVersion = useCallback((messageIndex, direction) => {
+                setConversation(prev => {
+                    const newConvo = [...prev];
+                    const message = { ...newConvo[messageIndex] };
+                    const { versions, currentVersionIndex = 0 } = message;
+                    
+                    if (!versions) return prev;
+
+                    let newIndex = currentVersionIndex;
+                    if (direction === 'prev' && currentVersionIndex > 0) {
+                        newIndex--;
+                    } else if (direction === 'next' && currentVersionIndex < versions.length - 1) {
+                        newIndex++;
+                    }
+                    
+                    if (newIndex !== currentVersionIndex) {
+                        message.currentVersionIndex = newIndex;
+                        message.content = versions[newIndex].content;
+                        newConvo[messageIndex] = message;
+                    }
+                    
+                    return newConvo;
+                });
+            }, [setConversation]);
 
             const handleKeyDown = (e) => {
                 const isMobile = /Mobi/i.test(window.navigator.userAgent);
@@ -2951,7 +3097,9 @@
                             onPreviewImage: (url) => setPreviewImageUrl(url),
                             onDeleteMessage: handleDeleteMessage,
                             onShowToast: showToast,
-                            processImageFiles: processImageFiles
+                            processImageFiles: processImageFiles,
+                            onSwitchVersion: handleSwitchVersion,
+                            onRegenerate: handleRegenerateLastResponse
                         })
                     ),
                     React.createElement('div', { className: 'flex-shrink-0 bg-transparent z-10' },
@@ -3011,7 +3159,7 @@
                                             }),
                                             React.createElement('button', {
                                                 onClick: handleRegenerateLastResponse,
-                                                disabled: editingIndex !== null || !conversation.some(msg => msg.role === 'user'),
+                                                disabled: isLoading || editingIndex !== null || conversation.length === 0 || conversation[conversation.length - 1].role !== 'assistant',
                                                 className: 'ios-button ios-button-secondary h-11 w-11 p-0',
                                                 'aria-label': '重新生成'
                                             }, React.createElement(RegenerateIcon)),
