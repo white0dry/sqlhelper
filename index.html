@@ -1668,24 +1668,30 @@
 
             useEffect(() => {
                 setCurrentSettings(activeProfile.settings);
-                setAvailableModels(activeProfile.settings.apiModel ? [activeProfile.settings.apiModel] : []);
+                setAvailableModels(activeProfile.settings.cachedModels || []);
             }, [activeProfile]);
 
             const handleChange = (e) => {
                 const { name, value } = e.target;
-                setCurrentSettings(prev => ({ ...prev, [name]: value }));
+                setCurrentSettings(prev => {
+                    const newSettings = { ...prev, [name]: value };
+                    if (name === 'apiUrl' || name === 'apiKey') {
+                        delete newSettings.cachedModels;
+                        setAvailableModels([]);
+                    }
+                    return newSettings;
+                });
             };
 
             const handleSave = () => {
-                const { maxHistory, ...restSettings } = currentSettings;
-                const numMaxHistory = parseInt(maxHistory, 10);
+                const numMaxHistory = parseInt(currentSettings.maxHistory, 10);
 
-                if (String(maxHistory).trim() === '' || isNaN(numMaxHistory) || numMaxHistory < 1 || numMaxHistory > 50) {
+                if (String(currentSettings.maxHistory).trim() === '' || isNaN(numMaxHistory) || numMaxHistory < 1 || numMaxHistory > 50) {
                     alert('历史会话记录最大条数必须是 1 到 50 之间的数字。');
                     return;
                 }
                 
-                onSave({ ...restSettings, maxHistory: numMaxHistory });
+                onSave({ ...currentSettings, maxHistory: numMaxHistory });
             };
             
             const handleResetCurrentSettings = () => {
@@ -1843,17 +1849,26 @@
                 try {
                     const models = await fetchModels(currentSettings.apiUrl, currentSettings.apiKey);
                     setAvailableModels(models);
+                    
+                    let newSettings = { ...currentSettings, cachedModels: models };
+                    if (models.length > 0 && !models.includes(currentSettings.apiModel)) {
+                        newSettings.apiModel = models[0];
+                    }
+                    setCurrentSettings(newSettings);
+                    
                      if (models.length > 0) {
                         onShowToast('模型列表获取成功！');
-                        if (!models.includes(currentSettings.apiModel)) {
-                            setCurrentSettings(prev => ({ ...prev, apiModel: models[0] }));
-                        }
                     } else {
                         onShowToast('获取成功，但未找到可用模型。');
                     }
                 } catch (error) {
                     alert(`获取模型列表失败: ${error instanceof Error ? error.message : '未知错误'}`);
                     setAvailableModels([]);
+                    setCurrentSettings(prev => {
+                        const newSettings = { ...prev };
+                        delete newSettings.cachedModels;
+                        return newSettings;
+                    });
                 } finally {
                     setIsFetchingModels(false);
                 }
