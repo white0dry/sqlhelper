@@ -2690,14 +2690,14 @@
         const ImagePreviewGrid = ({ images, onRemove, onPreview }) => {
             if (!images || images.length === 0) return null;
 
-            return React.createElement('div', { className: 'mb-2 flex gap-2' },
+            return React.createElement('div', { className: 'mb-2 flex flex-wrap gap-2' },
                 images.map((image, idx) => 
-                    React.createElement('div', { key: idx, className: 'relative flex-1 aspect-square' },
+                    React.createElement('div', { key: idx, className: 'relative w-20 h-20 md:w-24 md:h-24' },
                         React.createElement('img', { 
                             src: image.dataUrl, 
                             alt: `上传图片预览 ${idx + 1}`,
-                            className: 'w-full h-full object-cover rounded-lg border border-[var(--border-color)] cursor-pointer',
-                            onClick: () => onPreview(image.dataUrl)
+                            className: 'w-full h-full object-cover rounded-lg border border-[var(--border-color)] cursor-pointer', 
+                            onClick: () => onPreview(image.dataUrl) 
                         }),
                         React.createElement('button', {
                             onClick: () => onRemove(idx),
